@@ -1,13 +1,31 @@
-import { getCurrentSession } from '@/lib/auth';
+import { useAuthStore } from '@/lib/auth-store';
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
+interface ApiSuccess<T> {
+  success: true;
   response: T;
-  message?: string;
+}
+
+interface ApiError {
+  success: false;
+  statusCode: number;
+  error: {
+    message: string;
+    path: string;
+    timestamp: string;
+  };
+}
+
+export class ApiRequestError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+  }
 }
 
 export async function fetcher<T>(
@@ -21,7 +39,6 @@ export async function fetcher<T>(
     throw new Error('NEXT_PUBLIC_BACKEND_REST_URL is not defined.');
   }
 
-  // Construct URL with query parameters
   const url = new URL(`/api/${endpoint.replace(/^\//, '')}`, baseUrl);
   if (params) {
     Object.entries(params).forEach(([key, value]) =>
@@ -29,12 +46,10 @@ export async function fetcher<T>(
     );
   }
 
-  // Attach session token if available
-  const session = await getCurrentSession();
+  const accessToken = useAuthStore.getState().accessToken;
   const authHeaders: Record<string, string> = {};
-
-  if (session?.accessToken) {
-    authHeaders['Authorization'] = `Bearer ${session.accessToken}`;
+  if (accessToken) {
+    authHeaders['Authorization'] = `Bearer ${accessToken}`;
   }
 
   const response = await fetch(url.toString(), {
@@ -47,13 +62,22 @@ export async function fetcher<T>(
     ...customConfig,
   });
 
-  if (!response.ok) {
-    throw new Error(`REST API Error: ${response.status} ${response.statusText}`);
+  let data: ApiSuccess<T> | ApiError | null = null;
+  try {
+    data = await response.json();
+  } catch {
+    // no JSON body
   }
 
-  const data: ApiResponse<T> = await response.json();
-  if (!data.success) {
-    throw new Error(data.message || 'API operation failed');
+  if (!response.ok || !data || data.success === false) {
+    if (response.status === 401) {
+      useAuthStore.getState().clearSession();
+    }
+    const message =
+      data && data.success === false
+        ? data.error?.message
+        : `Request failed with status ${response.status}`;
+    throw new ApiRequestError(message || 'Request failed', response.status);
   }
 
   return data.response;
