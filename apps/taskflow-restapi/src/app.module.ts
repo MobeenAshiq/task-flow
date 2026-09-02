@@ -7,6 +7,9 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { RedisModule } from './redis/redis.module';
 import { JobsModule } from './jobs/jobs.module';
 import { GatewaysModule } from './gateways/gateways.module';
+import { HealthModule } from './health/health.module';
+import { AppLoggerModule } from './common/logger/logger.module';
+import { RunnerModule } from './runner/runner.module';
 
 @Module({
   imports: [
@@ -28,9 +31,12 @@ import { GatewaysModule } from './gateways/gateways.module';
         synchronize: true,
       }),
     }),
+    AppLoggerModule,
     RedisModule,
     JobsModule,
     GatewaysModule,
+    HealthModule,
+    RunnerModule,
     AuthModule,
     AssignmentsModule,
   ],
