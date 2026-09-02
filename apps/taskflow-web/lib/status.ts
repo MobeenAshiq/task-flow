@@ -31,3 +31,16 @@ export function formatDate(value?: string | Date | null): string {
     minute: '2-digit',
   });
 }
+
+export function formatDateOnly(value?: string | Date | null): string {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}

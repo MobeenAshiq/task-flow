@@ -42,6 +42,16 @@ export interface Course {
   teacherName?: string;
 }
 
+export interface Lecture {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+  courseId: string;
+  creatorId: string;
+  createdAt: string;
+}
+
 export interface RosterEntry {
   id: string;
   name: string;

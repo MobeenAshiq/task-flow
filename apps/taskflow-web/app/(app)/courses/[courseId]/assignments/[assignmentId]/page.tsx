@@ -69,6 +69,12 @@ export default function StudentWorkspacePage() {
   const draftKey = `draft_assignment_${assignmentId}`;
   const liveSubmission = useSubmissionStream(submission?.id || '');
 
+  // Never let a stale `language` value (an old draft, a since-narrowed
+  // allowed-languages list, ...) show or submit a language this assignment
+  // doesn't actually accept.
+  const effectiveLanguage =
+    assignment && !assignment.allowedLanguages.includes(language) ? assignment.allowedLanguages[0] : language;
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -82,7 +88,13 @@ export default function StudentWorkspacePage() {
           setAssignment(match);
           setSubmission(match.submission ?? null);
 
-          const defaultLanguage = match.submission?.language ?? match.allowedLanguages[0];
+          // A past submission's language only counts as the default if the
+          // assignment still allows it — a teacher may narrow the allowed
+          // languages after students have already submitted.
+          const defaultLanguage =
+            match.submission && match.allowedLanguages.includes(match.submission.language)
+              ? match.submission.language
+              : match.allowedLanguages[0];
           const raw = typeof window !== 'undefined' ? localStorage.getItem(draftKey) : null;
           const draft = parseDraft(raw, match.allowedLanguages, defaultLanguage);
           setCode(draft?.code ?? match.starterCode ?? '');
@@ -105,14 +117,14 @@ export default function StudentWorkspacePage() {
   useEffect(() => {
     if (loading) return;
     const timer = setTimeout(() => {
-      const payload: DraftPayload = { code, language };
+      const payload: DraftPayload = { code, language: effectiveLanguage };
       localStorage.setItem(draftKey, JSON.stringify(payload));
       setAutosaved(true);
       const flash = setTimeout(() => setAutosaved(false), 1800);
       return () => clearTimeout(flash);
     }, 700);
     return () => clearTimeout(timer);
-  }, [code, language, draftKey, loading]);
+  }, [code, effectiveLanguage, draftKey, loading]);
 
   // Merge any live socket updates for the active submission
   useEffect(() => {
@@ -147,11 +159,11 @@ export default function StudentWorkspacePage() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await assignmentsApi.submit(assignmentId, code, language);
+      const result = await assignmentsApi.submit(assignmentId, code, effectiveLanguage);
       setSubmission({
         id: result.id,
         status: result.status as SubmissionStatus,
-        language,
+        language: effectiveLanguage,
         submittedAt: new Date().toISOString(),
         grade: null,
         score: null,
@@ -162,7 +174,7 @@ export default function StudentWorkspacePage() {
     } finally {
       setSubmitting(false);
     }
-  }, [assignmentId, code, language]);
+  }, [assignmentId, code, effectiveLanguage]);
 
   const flashClipboardNotice = (text: string) => {
     setClipboardNotice(text);
@@ -209,13 +221,13 @@ export default function StudentWorkspacePage() {
     setAiLoading('analyze');
     setAiError(null);
     try {
-      setCodeAnalysis(await aiApi.analyzeCode(code, language));
+      setCodeAnalysis(await aiApi.analyzeCode(code, effectiveLanguage));
     } catch (err) {
       setAiError(err instanceof ApiRequestError ? err.message : 'Could not analyze your code right now.');
     } finally {
       setAiLoading(null);
     }
-  }, [code, language]);
+  }, [code, effectiveLanguage]);
 
   const handleGetHint = useCallback(async () => {
     if (!assignment) return;
@@ -405,7 +417,7 @@ export default function StudentWorkspacePage() {
             <div className="flex items-center gap-2">
               <span>Language</span>
               <Select
-                value={language}
+                value={effectiveLanguage}
                 disabled={locked || assignment.allowedLanguages.length < 2}
                 onChange={(e) => setLanguage(e.target.value as ExecutionLanguage)}
                 title={
@@ -441,7 +453,7 @@ export default function StudentWorkspacePage() {
           <div className="min-h-0 flex-1">
             <Editor
               height="100%"
-              language={languageMeta[language].monacoId}
+              language={languageMeta[effectiveLanguage].monacoId}
               theme="vs-dark"
               value={code}
               onChange={(value) => setCode(value || '')}

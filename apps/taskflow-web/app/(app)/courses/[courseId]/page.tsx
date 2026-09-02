@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Check, ClipboardCopy, FileCode2, Plus, Users } from 'lucide-react';
+import { Check, ClipboardCopy, FileCode2, NotebookPen, Plus, Users } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { assignmentsApi, coursesApi } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
@@ -111,6 +111,14 @@ export default function CourseDetailPage() {
           </button>
         )}
       </Card>
+
+      <Link
+        href={`/courses/${courseId}/lectures`}
+        className={buttonVariants('secondary', 'sm', 'w-fit')}
+      >
+        <NotebookPen className="size-4" />
+        Lectures
+      </Link>
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-fg">

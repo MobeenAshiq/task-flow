@@ -7,10 +7,12 @@ import {
   CourseMembershipEntity,
   AssignmentEntity,
   SubmissionEntity,
+  LectureEntity,
 } from '@taskflow/shared';
 import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { LecturesModule } from './lectures/lectures.module';
 import { RedisModule } from './redis/redis.module';
 import { JobsModule } from './jobs/jobs.module';
 import { GatewaysModule } from './gateways/gateways.module';
@@ -41,6 +43,7 @@ import { AiModule } from './ai/ai.module';
           CourseMembershipEntity,
           AssignmentEntity,
           SubmissionEntity,
+          LectureEntity,
         ],
         synchronize: true,
       }),
@@ -55,6 +58,7 @@ import { AiModule } from './ai/ai.module';
     AuthModule,
     CoursesModule,
     AssignmentsModule,
+    LecturesModule,
   ],
 })
 export class AppModule {}

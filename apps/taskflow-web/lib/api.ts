@@ -5,6 +5,7 @@ import type {
   Course,
   CourseDetail,
   ExecutionLanguage,
+  Lecture,
   SubmissionRow,
   UserRole,
 } from '@/lib/types';
@@ -99,5 +100,14 @@ export const aiApi = {
     fetcher<SocraticHint>('ai/socratic-hint', {
       method: 'POST',
       body: JSON.stringify({ assignmentPrompt, studentCode, errorOutput }),
+    }),
+};
+
+export const lecturesApi = {
+  listByCourse: (courseId: string) => fetcher<Lecture[]>(`lectures/course/${courseId}`),
+  create: (payload: { title: string; content: string; date: string; courseId: string }) =>
+    fetcher<Lecture>('lectures', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
