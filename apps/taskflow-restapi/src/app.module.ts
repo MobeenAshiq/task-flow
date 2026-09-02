@@ -5,6 +5,7 @@ import { UserEntity, AssignmentEntity, SubmissionEntity } from '@taskflow/shared
 import { AuthModule } from './auth/auth.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { RedisModule } from './redis/redis.module';
+import { JobsModule } from './jobs/jobs.module';
 
 @Module({
   imports: [
@@ -23,10 +24,11 @@ import { RedisModule } from './redis/redis.module';
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'taskflow'),
         entities: [UserEntity, AssignmentEntity, SubmissionEntity],
-        synchronize: true, // Automatically synchronizes/migrates schema in dev mode
+        synchronize: true,
       }),
     }),
     RedisModule,
+    JobsModule,
     AuthModule,
     AssignmentsModule,
   ],
