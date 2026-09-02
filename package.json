@@ -13,7 +13,10 @@
     "build_rt_etl": "pnpm --filter taskflow-rt-etl run build",
     "build_wrt_etl": "pnpm --filter taskflow-wrt-etl run build",
     "migration:run": "pnpm --filter @taskflow/shared run migration:run",
-    "migration:generate": "pnpm --filter @taskflow/shared run migration:generate"
+    "migration:generate": "pnpm --filter @taskflow/shared run migration:generate",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
