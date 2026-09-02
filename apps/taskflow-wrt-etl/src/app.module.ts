@@ -2,7 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bullmq';
-import { UserEntity, AssignmentEntity, SubmissionEntity } from '@taskflow/shared';
+import {
+  UserEntity,
+  CourseEntity,
+  CourseMembershipEntity,
+  AssignmentEntity,
+  SubmissionEntity,
+} from '@taskflow/shared';
 import { SUBMISSION_QUEUE } from './constants/queue.constants';
 import { SubmissionProcessor } from './processors/submission.processor';
 import { CodeRunnerService } from './services/code-runner.service';
@@ -23,11 +29,23 @@ import { CodeRunnerService } from './services/code-runner.service';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'taskflow'),
-        entities: [UserEntity, AssignmentEntity, SubmissionEntity],
-        synchronize: false, // Migrations managed by restapi / shared
+        entities: [
+          UserEntity,
+          CourseEntity,
+          CourseMembershipEntity,
+          AssignmentEntity,
+          SubmissionEntity,
+        ],
+        synchronize: false,
       }),
     }),
-    TypeOrmModule.forFeature([SubmissionEntity, AssignmentEntity, UserEntity]),
+    TypeOrmModule.forFeature([
+      SubmissionEntity,
+      AssignmentEntity,
+      CourseEntity,
+      CourseMembershipEntity,
+      UserEntity,
+    ]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

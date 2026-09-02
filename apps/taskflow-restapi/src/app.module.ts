@@ -1,8 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity, AssignmentEntity, SubmissionEntity } from '@taskflow/shared';
+import {
+  UserEntity,
+  CourseEntity,
+  CourseMembershipEntity,
+  AssignmentEntity,
+  SubmissionEntity,
+} from '@taskflow/shared';
 import { AuthModule } from './auth/auth.module';
+import { CoursesModule } from './courses/courses.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { RedisModule } from './redis/redis.module';
 import { JobsModule } from './jobs/jobs.module';
@@ -27,7 +34,13 @@ import { RunnerModule } from './runner/runner.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'taskflow'),
-        entities: [UserEntity, AssignmentEntity, SubmissionEntity],
+        entities: [
+          UserEntity,
+          CourseEntity,
+          CourseMembershipEntity,
+          AssignmentEntity,
+          SubmissionEntity,
+        ],
         synchronize: true,
       }),
     }),
@@ -38,6 +51,7 @@ import { RunnerModule } from './runner/runner.module';
     HealthModule,
     RunnerModule,
     AuthModule,
+    CoursesModule,
     AssignmentsModule,
   ],
 })

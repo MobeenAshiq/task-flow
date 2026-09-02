@@ -44,6 +44,23 @@ export class SubmissionEntity extends BaseEntity {
   @Column({ type: 'int', nullable: true })
   memoryUsedKb?: number;
 
+  // Teacher Manual Grading Fields
+  @Column({ type: 'int', nullable: true })
+  grade?: number;
+
+  @Column({ type: 'text', nullable: true })
+  feedback?: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  gradedAt?: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  gradedById?: string;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'gradedById' })
+  gradedBy?: UserEntity;
+
   // Foreign keys
   @Column({ type: 'uuid' })
   studentId: string;

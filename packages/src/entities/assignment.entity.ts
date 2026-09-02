@@ -2,6 +2,7 @@ import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm
 import { BaseEntity } from './base.entity';
 import { UserEntity } from './user.entity';
 import { SubmissionEntity } from './submission.entity';
+import { CourseEntity } from './course.entity';
 import { TestCase } from '../interfaces/test-case.interface';
 import { ExecutionLanguage } from '../enums/execution-language.enum';
 
@@ -13,7 +14,7 @@ export class AssignmentEntity extends BaseEntity {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'text', nullable: true })
   starterCode?: string;
 
   @Column({
@@ -38,7 +39,16 @@ export class AssignmentEntity extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   isPublished: boolean;
 
-  // Foreign key reference
+  // Course Relation
+  @Column({ type: 'uuid', nullable: true })
+  @Index()
+  courseId?: string;
+
+  @ManyToOne(() => CourseEntity, (course) => course.assignments, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'courseId' })
+  course?: CourseEntity;
+
+  // Creator Foreign key reference
   @Column({ type: 'uuid' })
   @Index()
   creatorId: string;
