@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
+    "dev:start_web": "pnpm --filter taskflow-web run dev",
     "dev:start_restApi": "pnpm --filter taskflow-restapi run start:dev",
     "dev:start_rt_etl": "pnpm --filter taskflow-rt-etl run start:dev",
     "dev:start_wrt_etl": "pnpm --filter taskflow-wrt-etl run start:dev",
