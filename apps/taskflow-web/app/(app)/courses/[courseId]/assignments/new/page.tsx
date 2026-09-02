@@ -9,8 +9,9 @@ import { ExecutionLanguage } from '@/lib/types';
 import { languageMeta } from '@/lib/status';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Label, Input, Textarea, Select } from '@/components/ui/Field';
+import { Label, Input, Textarea } from '@/components/ui/Field';
 import { ErrorNote } from '@/components/ui/ErrorNote';
+import { cn } from '@/lib/cn';
 
 export default function NewAssignmentPage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -18,14 +19,24 @@ export default function NewAssignmentPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [language, setLanguage] = useState<ExecutionLanguage>(ExecutionLanguage.PYTHON);
+  const [allowedLanguages, setAllowedLanguages] = useState<ExecutionLanguage[]>([ExecutionLanguage.PYTHON]);
   const [dueDate, setDueDate] = useState('');
   const [starterCode, setStarterCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const toggleLanguage = (lang: ExecutionLanguage) => {
+    setAllowedLanguages((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (allowedLanguages.length === 0) {
+      setError('Select at least one language students may submit in.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -33,7 +44,7 @@ export default function NewAssignmentPage() {
         title: title.trim(),
         description: description.trim(),
         starterCode: starterCode || undefined,
-        language,
+        allowedLanguages,
         courseId,
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
@@ -75,21 +86,36 @@ export default function NewAssignmentPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="language">Language</Label>
-              <Select id="language" value={language} onChange={(e) => setLanguage(e.target.value as ExecutionLanguage)}>
-                {Object.entries(languageMeta).map(([value, meta]) => (
-                  <option key={value} value={value}>
+          <div>
+            <Label>Allowed languages</Label>
+            <p className="mb-2 -mt-1 text-xs text-fg-subtle">
+              Students will only be able to pick among these when submitting.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(languageMeta).map(([value, meta]) => {
+                const selected = allowedLanguages.includes(value as ExecutionLanguage);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleLanguage(value as ExecutionLanguage)}
+                    className={cn(
+                      'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                      selected
+                        ? 'border-accent/50 bg-accent/10 text-accent'
+                        : 'border-border-strong text-fg-muted hover:text-fg'
+                    )}
+                  >
                     {meta.label}
-                  </option>
-                ))}
-              </Select>
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <Label htmlFor="dueDate">Due date</Label>
-              <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="dueDate">Due date</Label>
+            <Input id="dueDate" type="date" className="sm:w-56" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
 
           <div>

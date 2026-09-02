@@ -9,7 +9,7 @@ import { assignmentsApi, coursesApi } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
 import { UserRole, type Assignment, type CourseDetail } from '@/lib/types';
 import { buttonVariants } from '@/components/ui/Button';
-import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { Spinner } from '@/components/ui/Spinner';
 import { ErrorNote } from '@/components/ui/ErrorNote';
 import { StatusDot } from '@/components/ui/StatusDot';
@@ -140,11 +140,16 @@ export default function CourseDetailPage() {
               <Link key={a.id} href={href}>
                 <Card className="flex flex-col gap-3 p-5 hover:border-border-strong sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-medium text-fg">{a.title}</h3>
-                      <span className="rounded border border-border-strong bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-fg-muted">
-                        {languageMeta[a.language].label}
-                      </span>
+                      {a.allowedLanguages.map((lang) => (
+                        <span
+                          key={lang}
+                          className="rounded border border-border-strong bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-fg-muted"
+                        >
+                          {languageMeta[lang].label}
+                        </span>
+                      ))}
                     </div>
                     <p className="text-xs text-fg-subtle">Due {formatDate(a.dueDate)}</p>
                   </div>

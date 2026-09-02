@@ -56,6 +56,7 @@ export interface CourseDetail extends Course {
 export interface AssignmentSubmissionSummary {
   id: string;
   status: SubmissionStatus;
+  language: ExecutionLanguage;
   submittedAt: string;
   grade?: number | null;
   score?: number | null;
@@ -66,7 +67,7 @@ export interface Assignment {
   title: string;
   description: string;
   starterCode?: string;
-  language: ExecutionLanguage;
+  allowedLanguages: ExecutionLanguage[];
   dueDate?: string | null;
   timeLimitMs: number;
   memoryLimitMb: number;

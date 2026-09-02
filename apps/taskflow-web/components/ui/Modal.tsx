@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+
+const noopSubscribe = () => () => {};
+// Portals need `document`, which isn't available during SSR; this reads as
+// false on the server and the first client render, then true after — the
+// React-blessed way to defer to client-only rendering without an effect.
+function useIsClient() {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
+}
 
 export function Modal({
   open,
@@ -18,9 +26,7 @@ export function Modal({
   children: React.ReactNode;
   widthClassName?: string;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsClient();
 
   useEffect(() => {
     if (!open) return;

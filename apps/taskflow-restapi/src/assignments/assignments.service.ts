@@ -1,11 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AssignmentEntity, SubmissionEntity, SubmissionStatus, UserRole } from '@taskflow/shared';
+import { AssignmentEntity, ExecutionLanguage, SubmissionEntity, SubmissionStatus, UserRole } from '@taskflow/shared';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { SubmissionQueueProducer } from '../jobs/producers/submission-queue.producer';
+import { detectLanguageMismatch } from './language-detector.util';
 
 @Injectable()
 export class AssignmentsService {
@@ -22,7 +23,7 @@ export class AssignmentsService {
       title: dto.title,
       description: dto.description,
       starterCode: dto.starterCode,
-      language: dto.language,
+      allowedLanguages: dto.allowedLanguages?.length ? dto.allowedLanguages : [ExecutionLanguage.NODEJS],
       courseId: dto.courseId,
       dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       timeLimitMs: dto.timeLimitMs || 2000,
@@ -52,9 +53,14 @@ export class AssignmentsService {
     if (user.role === UserRole.STUDENT) {
       const submissions = await this.submissionRepo.find({
         where: { studentId: user.id },
+        order: { createdAt: 'DESC' },
       });
 
-      const submissionMap = new Map(submissions.map((s) => [s.assignmentId, s]));
+      // Keep only the most recent submission per assignment (students may resubmit).
+      const submissionMap = new Map<string, SubmissionEntity>();
+      for (const s of submissions) {
+        if (!submissionMap.has(s.assignmentId)) submissionMap.set(s.assignmentId, s);
+      }
 
       return assignments.map((a) => {
         const sub = submissionMap.get(a.id);
@@ -64,6 +70,7 @@ export class AssignmentsService {
             ? {
                 id: sub.id,
                 status: sub.status,
+                language: sub.language,
                 submittedAt: sub.createdAt,
                 grade: sub.grade,
                 score: sub.score,
@@ -125,11 +132,22 @@ export class AssignmentsService {
   async submit(assignmentId: string, dto: SubmitAssignmentDto, studentId?: string) {
     const assignment = await this.findOne(assignmentId);
 
+    if (!assignment.allowedLanguages.includes(dto.language)) {
+      throw new BadRequestException(
+        `This assignment only accepts: ${assignment.allowedLanguages.join(', ')}.`,
+      );
+    }
+
+    const languageMismatch = detectLanguageMismatch(dto.code, dto.language);
+    if (languageMismatch) {
+      throw new BadRequestException(languageMismatch);
+    }
+
     const submission = this.submissionRepo.create({
       studentId: studentId || '00000000-0000-0000-0000-000000000000',
       assignmentId: assignment.id,
       code: dto.code,
-      language: assignment.language,
+      language: dto.language,
       status: SubmissionStatus.PENDING,
     });
     const savedSubmission = await this.submissionRepo.save(submission);
@@ -139,7 +157,7 @@ export class AssignmentsService {
       assignmentId: assignment.id,
       studentId: savedSubmission.studentId,
       code: dto.code,
-      language: assignment.language,
+      language: dto.language,
       testCases: assignment.testCases || [],
       timeLimitMs: assignment.timeLimitMs,
       memoryLimitMb: assignment.memoryLimitMb,

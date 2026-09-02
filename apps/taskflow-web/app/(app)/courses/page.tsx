@@ -37,8 +37,10 @@ export default function CoursesPage() {
   };
 
   useEffect(() => {
+    // `load` is also reused as the join-modal's refresh callback, so it's kept
+    // in component scope rather than declared inline.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

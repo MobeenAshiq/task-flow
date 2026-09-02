@@ -113,7 +113,7 @@ export default function GradingDeskPage() {
       <div>
         <h1 className="text-xl font-semibold text-fg">{assignment.title}</h1>
         <p className="mt-1 text-xs text-fg-subtle">
-          {languageMeta[assignment.language].label} · {submissions.length} submission
+          {assignment.allowedLanguages.map((lang) => languageMeta[lang].label).join(' / ')} · {submissions.length} submission
           {submissions.length === 1 ? '' : 's'}
         </p>
       </div>

@@ -15,6 +15,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
+    // localStorage isn't available during SSR, so this can only be read post-mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
   }, []);
 
@@ -43,9 +45,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-surface-0">
       <Sidebar collapsed={collapsed} onToggle={toggleCollapsed} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Navbar />
-        <main className="scrollbar-fine flex-1 overflow-y-auto">{children}</main>
+        <main className="scrollbar-fine min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

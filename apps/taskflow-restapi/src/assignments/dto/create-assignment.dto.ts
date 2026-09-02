@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsEnum, IsUUID, IsDateString, IsInt } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEnum, IsUUID, IsDateString, IsInt, IsArray, ArrayMinSize } from 'class-validator';
 import { ExecutionLanguage } from '@taskflow/shared';
 
 export class CreateAssignmentDto {
@@ -15,8 +15,10 @@ export class CreateAssignmentDto {
   starterCode?: string;
 
   @IsOptional()
-  @IsEnum(ExecutionLanguage)
-  language?: ExecutionLanguage;
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(ExecutionLanguage, { each: true })
+  allowedLanguages?: ExecutionLanguage[];
 
   @IsOptional()
   @IsUUID()

@@ -17,12 +17,10 @@ export class AssignmentEntity extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   starterCode?: string;
 
-  @Column({
-    type: 'enum',
-    enum: ExecutionLanguage,
-    default: ExecutionLanguage.NODEJS,
-  })
-  language: ExecutionLanguage;
+  // Languages the teacher allows for this assignment — students may only pick
+  // among these when submitting.
+  @Column({ type: 'jsonb', default: [ExecutionLanguage.NODEJS] })
+  allowedLanguages: ExecutionLanguage[];
 
   @Column({ type: 'jsonb', default: [] })
   testCases: TestCase[];

@@ -57,7 +57,6 @@ export default function DashboardPage() {
           const rows: ActivityRow[] = [];
           let submitted = 0;
           let graded = 0;
-          let gradeSum = 0;
           let assignmentTotal = 0;
 
           for (const { course, assignments } of assignmentsByCourse) {
@@ -68,7 +67,6 @@ export default function DashboardPage() {
               const hasGrade = a.submission.grade != null;
               if (hasGrade) {
                 graded += 1;
-                gradeSum += a.submission.grade!;
               }
               rows.push({
                 key: a.submission.id,

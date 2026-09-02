@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,6 +11,9 @@ async function bootstrap() {
 
   // Global prefix for API endpoints
   app.setGlobalPrefix('api');
+
+  // Normalizes every thrown error into { success:false, error:{ message, ... } }
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Global Request Validation using class-validator DTOs
   app.useGlobalPipes(

@@ -51,7 +51,7 @@ export const assignmentsApi = {
     title: string;
     description: string;
     starterCode?: string;
-    language?: ExecutionLanguage;
+    allowedLanguages?: ExecutionLanguage[];
     courseId: string;
     dueDate?: string;
     timeLimitMs?: number;
@@ -61,10 +61,10 @@ export const assignmentsApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  submit: (assignmentId: string, code: string) =>
+  submit: (assignmentId: string, code: string, language: ExecutionLanguage) =>
     fetcher<{ id: string; status: string }>(`assignments/${assignmentId}/submit`, {
       method: 'POST',
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, language }),
     }),
   listSubmissions: (assignmentId: string) =>
     fetcher<SubmissionRow[]>(`assignments/${assignmentId}/submissions`),
@@ -72,5 +72,32 @@ export const assignmentsApi = {
     fetcher<SubmissionRow>(`assignments/submissions/${submissionId}/grade`, {
       method: 'PATCH',
       body: JSON.stringify({ grade, feedback }),
+    }),
+};
+
+export interface CodeAnalysis {
+  timeComplexity: string;
+  spaceComplexity: string;
+  styleSuggestions: string[];
+  readabilityScore: number;
+}
+
+export interface SocraticHint {
+  role: string;
+  hint: string;
+  guardrailEnforced: boolean;
+  hasCodeSnippets: boolean;
+}
+
+export const aiApi = {
+  analyzeCode: (studentCode: string, language: ExecutionLanguage) =>
+    fetcher<CodeAnalysis>('ai/analyze-code', {
+      method: 'POST',
+      body: JSON.stringify({ studentCode, language }),
+    }),
+  socraticHint: (assignmentPrompt: string, studentCode: string, errorOutput?: string) =>
+    fetcher<SocraticHint>('ai/socratic-hint', {
+      method: 'POST',
+      body: JSON.stringify({ assignmentPrompt, studentCode, errorOutput }),
     }),
 };
