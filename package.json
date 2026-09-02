@@ -1,0 +1,29 @@
+{
+  "name": "task-flow-workspaces",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev:start_restApi": "pnpm --filter taskflow-restapi run start:dev",
+    "dev:start_rt_etl": "pnpm --filter taskflow-rt-etl run start:dev",
+    "dev:start_wrt_etl": "pnpm --filter taskflow-wrt-etl run start:dev",
+    "build:all": "pnpm --filter \"./apps/**\" --filter \"./packages/**\" build",
+    "build:restApi": "pnpm --filter taskflow-restapi run build",
+    "build_rt_etl": "pnpm --filter taskflow-rt-etl run build",
+    "build_wrt_etl": "pnpm --filter taskflow-wrt-etl run build",
+    "migration:run": "pnpm --filter @taskflow/shared run migration:run",
+    "migration:generate": "pnpm --filter @taskflow/shared run migration:generate"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "husky": "^9.0.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.0"
+  }
+}
