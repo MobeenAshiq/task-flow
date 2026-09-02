@@ -1,16 +1,8 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { BaseEntity } from './base.entity';
 
 @Entity('assignments')
-export class AssignmentEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class AssignmentEntity extends BaseEntity {
   @Column()
   title: string;
 
@@ -19,10 +11,4 @@ export class AssignmentEntity {
 
   @Column('text', { nullable: true })
   starterCode?: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }

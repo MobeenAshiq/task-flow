@@ -1,31 +1,30 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column, Index } from 'typeorm';
+import { BaseEntity } from './base.entity';
+import { UserRole } from '../enums/user-role.enum';
 
 @Entity('users')
-export class UserEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class UserEntity extends BaseEntity {
+  @Column({ type: 'varchar', length: 255 })
+  name: string;
 
-  @Column({ unique: true })
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ select: false })
+  // Selected false by default so password hashes aren't accidentally leaked in queries
+  @Column({ type: 'varchar', length: 255, select: false })
   password: string;
 
-  @Column({ nullable: true })
-  fullName?: string;
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.STUDENT,
+  })
+  role: UserRole;
 
-  @Column({ default: 'student' })
-  role: string;
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
 
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @Column({ type: 'varchar', nullable: true })
+  avatarUrl?: string;
 }

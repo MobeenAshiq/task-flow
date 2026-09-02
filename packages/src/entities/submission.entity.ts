@@ -1,16 +1,8 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column } from 'typeorm';
+import { BaseEntity } from './base.entity';
 
 @Entity('submissions')
-export class SubmissionEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class SubmissionEntity extends BaseEntity {
   @Column()
   assignmentId: string;
 
@@ -22,10 +14,4 @@ export class SubmissionEntity {
 
   @Column({ default: 'SUBMITTED' })
   status: string;
-
-  @CreateDateColumn()
-  submittedAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
 }
