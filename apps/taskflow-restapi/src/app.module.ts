@@ -17,6 +17,7 @@ import { GatewaysModule } from './gateways/gateways.module';
 import { HealthModule } from './health/health.module';
 import { AppLoggerModule } from './common/logger/logger.module';
 import { RunnerModule } from './runner/runner.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { RunnerModule } from './runner/runner.module';
     GatewaysModule,
     HealthModule,
     RunnerModule,
+    AiModule,
     AuthModule,
     CoursesModule,
     AssignmentsModule,

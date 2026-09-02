@@ -13,12 +13,28 @@ export default function NewAssignmentPage() {
   const [starterCode, setStarterCode] = useState(
     '# Write your starter code solution template below\ndef solution(nums, target):\n    # Your solution here\n    pass'
   );
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  const handleGenerateAiAssets = () => {
+    if (!description.trim()) {
+      alert('Please enter a brief assignment description first so AI can generate matching starter code.');
+      return;
+    }
+
+    setAiGenerating(true);
+    setTimeout(() => {
+      setStarterCode(
+        `# AI Generated Starter Code Template\ndef twoSum(nums: list[int], target: int) -> list[int]:\n    # Implement O(n) solution using hash map\n    pass\n`
+      );
+      setAiGenerating(false);
+    }, 600);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
 
-    // Direct redirection back to course detail
+    // Redirection back to course detail
     router.push('/courses/c1');
   };
 
@@ -34,12 +50,23 @@ export default function NewAssignmentPage() {
           <span className="text-slate-200">Create New Assignment</span>
         </div>
 
-        {/* Title */}
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-100">Create New Assignment</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Specify assignment instructions, target runtime language, starter code, and due date.
-          </p>
+        {/* Title & AI Action */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-100">Create New Assignment</h1>
+            <p className="text-sm text-slate-400 mt-1">
+              Specify assignment instructions, target runtime language, starter code, and due date.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGenerateAiAssets}
+            disabled={aiGenerating}
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2"
+          >
+            <span>{aiGenerating ? 'Generating Starter Code...' : 'Generate AI Starter Code ✨'}</span>
+          </button>
         </div>
 
         {/* Form */}
@@ -105,7 +132,7 @@ export default function NewAssignmentPage() {
 
           <div>
             <label className="block text-xs font-semibold uppercase text-slate-400 mb-2">
-              Starter Code Template (Optional)
+              Starter Code Template (Optional / AI Generated)
             </label>
             <textarea
               rows={6}

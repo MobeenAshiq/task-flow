@@ -49,11 +49,31 @@ export default function TeacherGradingDashboardPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<StudentSubmission | null>(null);
   const [inputGrade, setInputGrade] = useState<number>(0);
   const [inputFeedback, setInputFeedback] = useState<string>('');
+  const [aiDraftLoading, setAiDraftLoading] = useState(false);
+  const [showClassInsights, setShowClassInsights] = useState(false);
 
   const handleOpenGrade = (sub: StudentSubmission) => {
     setSelectedSubmission(sub);
     setInputGrade(sub.grade || 85);
     setInputFeedback(sub.feedback || '');
+  };
+
+  const handleGenerateAiDraft = () => {
+    setAiDraftLoading(true);
+    setTimeout(() => {
+      if (selectedSubmission?.code.includes('seen') || selectedSubmission?.code.includes('hash')) {
+        setInputGrade(95);
+        setInputFeedback(
+          'AI Draft Suggestion: Excellent implementation! Your O(n) hash table solution is optimal and handles array lookup efficiently.'
+        );
+      } else {
+        setInputGrade(82);
+        setInputFeedback(
+          'AI Draft Suggestion: Code works correctly, but uses nested loops leading to O(n^2) time complexity. Consider using a hash map for linear lookup.'
+        );
+      }
+      setAiDraftLoading(false);
+    }, 600);
   };
 
   const handleSaveGrade = (e: React.FormEvent) => {
@@ -80,7 +100,7 @@ export default function TeacherGradingDashboardPage() {
             ← Back to Course
           </Link>
           <span>/</span>
-          <span className="text-slate-200">Teacher Review & Grading Dashboard</span>
+          <span className="text-slate-200">Teacher Review & AI Assistant Dashboard</span>
         </div>
 
         {/* Header */}
@@ -88,16 +108,58 @@ export default function TeacherGradingDashboardPage() {
           <div>
             <h1 className="text-3xl font-extrabold text-slate-100">{assignment.title}</h1>
             <p className="text-sm text-slate-400 mt-1">
-              Review student code submissions, verify submission timestamps, and provide grades & feedback.
+              Review student code submissions, leverage AI Smart Grading drafts, and track class misconceptions.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs bg-indigo-950 text-indigo-300 border border-indigo-800 px-3 py-1.5 rounded-lg font-mono">
-              Total Submissions: {submissions.length}
-            </span>
+            <button
+              onClick={() => setShowClassInsights(!showClassInsights)}
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+            >
+              <span>Class AI Misconception Insights 📊</span>
+            </button>
           </div>
         </div>
+
+        {/* Class Misconceptions Analytics Drawer */}
+        {showClassInsights && (
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-2xl p-6 space-y-4 shadow-2xl backdrop-blur animate-in fade-in">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <span>📊 Class-Wide Misconception Summary</span>
+                <span className="text-xs bg-indigo-950 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-800 font-mono">
+                  15 Submissions Analyzed
+                </span>
+              </h3>
+              <button onClick={() => setShowClassInsights(false)} className="text-xs text-slate-400 hover:text-white">
+                Close ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-amber-400">⚠️ Empty Array Boundary Check</span>
+                  <span className="text-xs font-mono text-slate-400">40% of class</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  40% of students forgot to handle array length checks before accessing index 0.
+                </p>
+              </div>
+
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-cyan-400">⚡ O(n²) Time Complexity Bottleneck</span>
+                  <span className="text-xs font-mono text-slate-400">25% of class</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Students used nested loops instead of single-pass hash table lookups.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Submissions Table */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
@@ -167,12 +229,25 @@ export default function TeacherGradingDashboardPage() {
                     Submitted: {selectedSubmission.submittedAt} {selectedSubmission.isLate && '(Late)'}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedSubmission(null)}
-                  className="text-slate-400 hover:text-white p-1"
-                >
-                  ✕
-                </button>
+
+                <div className="flex items-center gap-3">
+                  {/* AI Smart Grading Draft Button */}
+                  <button
+                    type="button"
+                    onClick={handleGenerateAiDraft}
+                    disabled={aiDraftLoading}
+                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <span>{aiDraftLoading ? 'Generating AI Draft...' : 'Auto-Draft AI Grade 🪄'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedSubmission(null)}
+                    className="text-slate-400 hover:text-white p-1"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Split Content Body */}

@@ -4,6 +4,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Editor from '@monaco-editor/react';
 
+interface AiResponseData {
+  type: string;
+  title: string;
+  content: string;
+  timeComplexity?: string;
+  spaceComplexity?: string;
+}
+
 export default function StudentWorkspacePage() {
   const assignment = {
     id: 'a1',
@@ -44,6 +52,11 @@ print(twoSum([2, 7, 11, 15], 9))
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedTime, setSubmittedTime] = useState<string | null>(null);
 
+  // AI Tutor Modal & Panel states
+  const [aiActiveTab, setAiActiveTab] = useState<'instructions' | 'ai_tutor'>('instructions');
+  const [aiResponse, setAiResponse] = useState<AiResponseData | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   // Auto-save draft effect
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +71,47 @@ print(twoSum([2, 7, 11, 15], 9))
   const handleSubmit = () => {
     setIsSubmitted(true);
     setSubmittedTime(new Date().toLocaleTimeString());
+  };
+
+  const handleAskSocraticHint = () => {
+    setAiLoading(true);
+    setTimeout(() => {
+      setAiResponse({
+        type: 'hint',
+        title: 'Socratic Tutor Hint (No Solution Code Revealed)',
+        content:
+          'Look closely at your dictionary lookup inside the loop. What happens on the first iteration when the dictionary is empty, and how does your index mapping update?',
+      });
+      setAiLoading(false);
+    }, 600);
+  };
+
+  const handleExplainError = () => {
+    setAiLoading(true);
+    setTimeout(() => {
+      setAiResponse({
+        type: 'explain',
+        title: 'Plain-English Error Breakdown',
+        content:
+          'KeyError: 9. This error means your code tried to look up number 9 in the hash map before it was added as a key. Always check if the complement exists in the dictionary before accessing it.',
+      });
+      setAiLoading(false);
+    }, 600);
+  };
+
+  const handleAnalyzeCode = () => {
+    setAiLoading(true);
+    setTimeout(() => {
+      setAiResponse({
+        type: 'analyze',
+        title: 'Big-O & Clean Code Analysis',
+        timeComplexity: 'O(n)',
+        spaceComplexity: 'O(n)',
+        content:
+          'Great solution! Your single-pass hash table strategy achieves linear O(n) time complexity and O(n) space complexity. Variable naming is clean and follows Python PEP-8 conventions.',
+      });
+      setAiLoading(false);
+    }, 600);
   };
 
   return (
@@ -101,27 +155,135 @@ print(twoSum([2, 7, 11, 15], 9))
 
       {/* Split Workspace Main View */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-800 overflow-hidden">
-        {/* Left Pane: Assignment Instructions & Markdown */}
-        <div className="p-6 overflow-y-auto space-y-6 bg-slate-950">
-          <div className="border-b border-slate-800 pb-4">
-            <h2 className="text-xl font-extrabold text-slate-100">{assignment.title}</h2>
-            <div className="flex items-center gap-4 text-xs text-slate-400 mt-1 font-mono">
-              <span>Due Date: <strong className="text-amber-400">{assignment.dueDate}</strong></span>
+        {/* Left Pane: Instructions & Socratic AI Tutor */}
+        <div className="flex flex-col h-full bg-slate-950 overflow-hidden">
+          {/* Left Pane Navigation Bar */}
+          <div className="bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAiActiveTab('instructions')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  aiActiveTab === 'instructions'
+                    ? 'bg-slate-800 text-slate-100 border border-slate-700'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                📝 Problem Instructions
+              </button>
+              <button
+                onClick={() => setAiActiveTab('ai_tutor')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 ${
+                  aiActiveTab === 'ai_tutor'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'text-indigo-400 hover:text-indigo-300 bg-indigo-950/50 border border-indigo-900/60'
+                }`}
+              >
+                <span>Socratic AI Tutor 🤖</span>
+              </button>
             </div>
+
+            <span className="text-[10px] text-indigo-400 font-mono">No-Code Policy Enforced</span>
           </div>
 
-          <div className="prose prose-invert max-w-none text-sm text-slate-300 space-y-4">
-            <p className="whitespace-pre-line">{assignment.description}</p>
-          </div>
+          {/* Left Pane Content Body */}
+          <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            {aiActiveTab === 'instructions' ? (
+              <>
+                <div className="border-b border-slate-800 pb-4">
+                  <h2 className="text-xl font-extrabold text-slate-100">{assignment.title}</h2>
+                  <div className="flex items-center gap-4 text-xs text-slate-400 mt-1 font-mono">
+                    <span>Due Date: <strong className="text-amber-400">{assignment.dueDate}</strong></span>
+                  </div>
+                </div>
 
-          {isSubmitted && (
-            <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-4 space-y-1 text-emerald-300 text-xs">
-              <h4 className="font-bold flex items-center gap-1">
-                <span>🎉 Solution Locked & Submitted</span>
-              </h4>
-              <p>Your code has been recorded in the database. Your instructor can now review and grade your work.</p>
-            </div>
-          )}
+                <div className="prose prose-invert max-w-none text-sm text-slate-300 space-y-4">
+                  <p className="whitespace-pre-line">{assignment.description}</p>
+                </div>
+
+                {isSubmitted && (
+                  <div className="bg-emerald-950/60 border border-emerald-800/80 rounded-xl p-4 space-y-1 text-emerald-300 text-xs">
+                    <h4 className="font-bold flex items-center gap-1">
+                      <span>🎉 Solution Locked & Submitted</span>
+                    </h4>
+                    <p>Your code has been recorded in the database. Your instructor can now review and grade your work.</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Socratic AI Tutor Tab */
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-100 flex items-center gap-2">
+                    <span>🤖 Socratic Virtual TA</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Get guided debugging hints, plain-English error breakdowns, and Big-O complexity checks without giving away answers.
+                  </p>
+                </div>
+
+                {/* AI Action Trigger Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={handleAskSocraticHint}
+                    className="p-3 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-800/80 rounded-xl text-left space-y-1 transition-all group"
+                  >
+                    <div className="text-xs font-bold text-indigo-300 group-hover:text-white flex items-center gap-1">
+                      <span>💡 Socratic Hint</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Guiding questions without solution code.</p>
+                  </button>
+
+                  <button
+                    onClick={handleExplainError}
+                    className="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-left space-y-1 transition-all group"
+                  >
+                    <div className="text-xs font-bold text-purple-300 group-hover:text-white flex items-center gap-1">
+                      <span>🧩 Explain Error</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Plain-English compiler stack trace breakdown.</p>
+                  </button>
+
+                  <button
+                    onClick={handleAnalyzeCode}
+                    className="p-3 bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-800/80 rounded-xl text-left space-y-1 transition-all group"
+                  >
+                    <div className="text-xs font-bold text-cyan-300 group-hover:text-white flex items-center gap-1">
+                      <span>⚡ Big-O Check</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">Time & space complexity analysis.</p>
+                  </button>
+                </div>
+
+                {/* AI Response Display Card */}
+                {aiLoading ? (
+                  <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-center text-xs text-indigo-400 font-mono animate-pulse">
+                    🤖 Socratic AI Tutor is thinking...
+                  </div>
+                ) : (
+                  aiResponse && (
+                    <div className="bg-slate-900/90 border border-indigo-500/30 rounded-xl p-5 space-y-3 shadow-xl backdrop-blur">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <h4 className="text-xs font-bold uppercase text-indigo-400 tracking-wider">
+                          {aiResponse.title}
+                        </h4>
+                        {aiResponse.timeComplexity && (
+                          <div className="flex items-center gap-2 text-xs font-mono">
+                            <span className="bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800">
+                              Time: {aiResponse.timeComplexity}
+                            </span>
+                            <span className="bg-slate-950 text-slate-300 px-2 py-0.5 rounded border border-slate-800">
+                              Space: {aiResponse.spaceComplexity}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-200 leading-relaxed">{aiResponse.content}</p>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Pane: Monaco Editor */}
