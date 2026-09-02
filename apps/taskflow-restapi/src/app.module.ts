@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserEntity, AssignmentEntity, SubmissionEntity } from '@taskflow/shared';
 import { AuthModule } from './auth/auth.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { RedisModule } from './redis/redis.module';
@@ -21,8 +22,8 @@ import { RedisModule } from './redis/redis.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'taskflow'),
-        autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') !== 'production', // Keep false in prod, use migrations
+        entities: [UserEntity, AssignmentEntity, SubmissionEntity],
+        synchronize: true, // Automatically synchronizes/migrates schema in dev mode
       }),
     }),
     RedisModule,
