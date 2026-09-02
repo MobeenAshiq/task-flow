@@ -1,0 +1,101 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+      - develop
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint, Unit & E2E Tests
+    runs-on: ubuntu-latest
+
+    # Service containers required by taskflow-restapi for integration/E2E testing
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: taskflow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgrespassword
+      DB_NAME: taskflow_test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_SECRET: test-super-secret-jwt-key-123456
+
+    steps:
+      # Step 1: Check out the code
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Install pnpm using corepack
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      # Step 3: Set up Node.js with pnpm dependency caching
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      # Step 4: Install Workspace Dependencies
+      - name: Install Monorepo Dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      # Step 5: Build Shared Packages First
+      - name: Build Shared Packages
+        run: pnpm --filter @taskflow/shared build
+
+      # Step 6: Code Formatting & Linting Check
+      - name: Run ESLint
+        run: pnpm lint
+
+      # Step 7: Run Unit Tests
+      - name: Run Unit Tests
+        run: pnpm test
+
+      # Step 8: Run Supertest / NestJS E2E Integration Tests
+      - name: Run E2E Integration Tests
+        run: pnpm --filter taskflow-restapi test:e2e
+
+      # Step 9: Verify Application Build Success
+      - name: Build Applications
+        run: pnpm build:all

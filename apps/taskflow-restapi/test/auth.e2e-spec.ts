@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { UserRole } from '@taskflow/shared';
 
@@ -21,6 +21,7 @@ describe('AuthController (E2E)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
   });
@@ -29,9 +30,9 @@ describe('AuthController (E2E)', () => {
     await app.close();
   });
 
-  it('/auth/register (POST) - Should successfully register a new teacher', async () => {
+  it('/api/auth/register (POST) - Should successfully register a new teacher', async () => {
     const res = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send(testUser)
       .expect(201);
 
@@ -40,9 +41,9 @@ describe('AuthController (E2E)', () => {
     expect(res.body.response.accessToken).toBeDefined();
   });
 
-  it('/auth/login (POST) - Should authenticate teacher and return JWT token', async () => {
+  it('/api/auth/login (POST) - Should authenticate teacher and return JWT token', async () => {
     const res = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/api/auth/login')
       .send({ email: testUser.email, password: testUser.password })
       .expect(201);
 
@@ -51,9 +52,9 @@ describe('AuthController (E2E)', () => {
     accessToken = res.body.response.accessToken;
   });
 
-  it('/auth/me (GET) - Should return current user profile when Bearer token is valid', async () => {
+  it('/api/auth/me (GET) - Should return current user profile when Bearer token is valid', async () => {
     const res = await request(app.getHttpServer())
-      .get('/auth/me')
+      .get('/api/auth/me')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
@@ -61,7 +62,7 @@ describe('AuthController (E2E)', () => {
     expect(res.body.response.email).toBe(testUser.email);
   });
 
-  it('/auth/me (GET) - Should reject unauthenticated requests with 401', async () => {
-    await request(app.getHttpServer()).get('/auth/me').expect(401);
+  it('/api/auth/me (GET) - Should reject unauthenticated requests with 401', async () => {
+    await request(app.getHttpServer()).get('/api/auth/me').expect(401);
   });
 });

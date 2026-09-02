@@ -4,7 +4,7 @@ import { io, Socket } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 
 export function useSubmissionStream(submissionId: string) {
-  const [submission, setSubmission] = useState<any>(null);
+  const [submission, setSubmission] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -16,7 +16,7 @@ export function useSubmissionStream(submissionId: string) {
 
     socket.emit('join_submission', { submissionId });
 
-    socket.on('submission_updated', (data: any) => {
+    socket.on('submission_updated', (data: Record<string, unknown>) => {
       setSubmission(data);
     });
 

@@ -8,7 +8,7 @@ export interface UserSession {
   accessToken?: string;
 }
 
-export async function getCurrentSession(req?: NextRequest): Promise<UserSession | null> {
+export async function getCurrentSession(_req?: NextRequest): Promise<UserSession | null> {
   // Supabase SSR session retrieval helper
   return null;
 }
