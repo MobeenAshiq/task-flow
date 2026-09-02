@@ -1,16 +1,12 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { SubmissionEntity } from '@taskflow/shared';
 import { SUBMISSION_QUEUE } from './constants/queue.constants';
 import { SubmissionQueueProducer } from './producers/submission-queue.producer';
-import { SubmissionProcessor } from './processors/submission.processor';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([SubmissionEntity]),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -25,7 +21,7 @@ import { SubmissionProcessor } from './processors/submission.processor';
       name: SUBMISSION_QUEUE,
     }),
   ],
-  providers: [SubmissionQueueProducer, SubmissionProcessor],
+  providers: [SubmissionQueueProducer],
   exports: [SubmissionQueueProducer],
 })
 export class JobsModule {}
