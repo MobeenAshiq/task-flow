@@ -1,7 +1,7 @@
 import { Entity, Column, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { BaseEntity } from './base.entity';
 import { UserEntity } from './user.entity';
-import { CourseMembershipEntity } from './course-membership.entity';
+import type { CourseMembershipEntity } from './course-membership.entity';
 import { AssignmentEntity } from './assignment.entity';
 
 @Entity('courses')
@@ -23,7 +23,7 @@ export class CourseEntity extends BaseEntity {
   @JoinColumn({ name: 'teacherId' })
   teacher: UserEntity;
 
-  @OneToMany(() => CourseMembershipEntity, (membership) => membership.course)
+  @OneToMany('CourseMembershipEntity', (membership: any) => membership.course)
   memberships: CourseMembershipEntity[];
 
   @OneToMany(() => AssignmentEntity, (assignment) => assignment.course)
