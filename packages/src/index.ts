@@ -1,5 +1,11 @@
 // Enums
 export * from './enums/user-role.enum';
+export * from './enums/submission-status.enum';
+export * from './enums/execution-language.enum';
+
+// Interfaces
+export * from './interfaces/test-case.interface';
+export * from './interfaces/test-result.interface';
 
 // Entities
 export * from './entities/base.entity';
