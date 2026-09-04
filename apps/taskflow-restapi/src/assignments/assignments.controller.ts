@@ -52,6 +52,16 @@ export class AssignmentsController {
     return { success: true, response: submission };
   }
 
+  @Post(':id/run')
+  @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN)
+  async runAssignmentCode(
+    @Param('id') id: string,
+    @Body() dto: { code: string; language: any },
+  ) {
+    const result = await this.assignmentsService.runCode(id, dto);
+    return { success: true, response: result };
+  }
+
   @Get(':id/submissions')
   @Roles(UserRole.TEACHER, UserRole.ADMIN)
   async getSubmissions(@Req() req: any, @Param('id') id: string) {

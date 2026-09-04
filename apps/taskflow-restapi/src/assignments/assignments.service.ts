@@ -6,6 +6,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { SubmitAssignmentDto } from './dto/submit-assignment.dto';
 import { GradeSubmissionDto } from './dto/grade-submission.dto';
 import { SubmissionQueueProducer } from '../jobs/producers/submission-queue.producer';
+import { SandboxRunnerService } from '../runner/sandbox-runner.service';
 import { detectLanguageMismatch } from './language-detector.util';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class AssignmentsService {
     @InjectRepository(SubmissionEntity)
     private readonly submissionRepo: Repository<SubmissionEntity>,
     private readonly queueProducer: SubmissionQueueProducer,
+    private readonly sandboxRunner: SandboxRunnerService,
   ) {}
 
   async create(dto: CreateAssignmentDto, creatorId?: string) {
@@ -186,5 +188,15 @@ export class AssignmentsService {
     });
 
     return submission;
+  }
+
+  async runCode(assignmentId: string, dto: { code: string; language: ExecutionLanguage }) {
+    const assignment = await this.findOne(assignmentId);
+    return await this.sandboxRunner.runLive({
+      code: dto.code,
+      language: dto.language,
+      testCases: assignment.testCases,
+      timeLimitMs: assignment.timeLimitMs,
+    });
   }
 }

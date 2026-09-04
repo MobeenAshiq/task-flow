@@ -101,6 +101,11 @@ export const assignmentsApi = {
       method: 'POST',
       body: JSON.stringify({ code, language }),
     }),
+  runCode: (assignmentId: string, code: string, language: ExecutionLanguage) =>
+    fetcher<RunCodeResult>(`assignments/${assignmentId}/run`, {
+      method: 'POST',
+      body: JSON.stringify({ code, language }),
+    }),
   listSubmissions: (assignmentId: string) =>
     fetcher<SubmissionRow[]>(`assignments/${assignmentId}/submissions`),
   grade: (submissionId: string, grade: number, feedback: string) =>
@@ -109,6 +114,23 @@ export const assignmentsApi = {
       body: JSON.stringify({ grade, feedback }),
     }),
 };
+
+export interface RunCodeResult {
+  status: string;
+  score: number;
+  stdout: string;
+  stderr: string;
+  executionTimeMs: number;
+  testResults: Array<{
+    testCaseId: string;
+    passed: boolean;
+    actualOutput?: string;
+    expectedOutput?: string;
+    executionTimeMs?: number;
+    error?: string;
+  }>;
+  executionLogs: string;
+}
 
 export interface CodeAnalysis {
   timeComplexity: string;

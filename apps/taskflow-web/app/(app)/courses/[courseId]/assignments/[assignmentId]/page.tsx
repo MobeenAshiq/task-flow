@@ -7,17 +7,20 @@ import dynamic from 'next/dynamic';
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Copy,
   Lightbulb,
   MessageCircleQuestion,
   PenLine,
+  Play,
   ScanSearch,
   SendHorizontal,
   ShieldBan,
   Sparkles,
+  Terminal,
   User,
 } from 'lucide-react';
-import { aiApi, assignmentsApi, type CodeAnalysis, type SocraticHint } from '@/lib/api';
+import { aiApi, assignmentsApi, type CodeAnalysis, type RunCodeResult, type SocraticHint } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
 import { useSubmissionStream } from '@/hooks/use-submission-stream';
 import { formatDate, languageMeta, submissionStatusMeta } from '@/lib/status';
@@ -79,6 +82,11 @@ export default function StudentWorkspacePage() {
   const [hint, setHint] = useState<SocraticHint | null>(null);
   const [question, setQuestion] = useState('');
   const [qaHistory, setQaHistory] = useState<{ question: string; answer: string }[]>([]);
+
+  const [runningCode, setRunningCode] = useState(false);
+  const [runResult, setRunResult] = useState<RunCodeResult | null>(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalTab, setTerminalTab] = useState<'console' | 'tests'>('console');
 
   const draftKey = `draft_assignment_${assignmentId}`;
   const liveSubmission = useSubmissionStream(submission?.id || '');
@@ -187,6 +195,27 @@ export default function StudentWorkspacePage() {
       setError(err instanceof ApiRequestError ? err.message : 'Failed to submit assignment.');
     } finally {
       setSubmitting(false);
+    }
+  }, [assignmentId, code, effectiveLanguage]);
+
+  const handleRunCode = useCallback(async () => {
+    setRunningCode(true);
+    setTerminalOpen(true);
+    try {
+      const result = await assignmentsApi.runCode(assignmentId, code, effectiveLanguage);
+      setRunResult(result);
+    } catch (err) {
+      setRunResult({
+        status: 'FAILED',
+        score: 0,
+        stdout: '',
+        stderr: err instanceof ApiRequestError ? err.message : 'Failed to execute code.',
+        executionTimeMs: 0,
+        testResults: [],
+        executionLogs: `Execution Error: ${err instanceof ApiRequestError ? err.message : 'Failed to execute code.'}`,
+      });
+    } finally {
+      setRunningCode(false);
     }
   }, [assignmentId, code, effectiveLanguage]);
 
@@ -317,6 +346,28 @@ export default function StudentWorkspacePage() {
           {submission?.grade != null && (
             <span className="font-mono text-xs font-semibold text-success">{submission.grade}/100</span>
           )}
+
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleRunCode}
+            loading={runningCode}
+            className="gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+          >
+            <Play className="size-3.5 fill-current" />
+            Run Code
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setTerminalOpen((prev) => !prev)}
+            className="gap-1 text-xs text-fg-muted hover:text-fg"
+          >
+            <Terminal className="size-3.5 text-emerald-400" />
+            Console {runResult ? `(${runResult.status})` : ''}
+          </Button>
+
           {isPastDeadline ? (
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-semibold text-danger">
               Submissions Closed (Deadline Passed)
@@ -603,6 +654,129 @@ export default function StudentWorkspacePage() {
               }}
             />
           </div>
+
+          {/* Terminal Output Panel */}
+          {terminalOpen && (
+            <div className="flex h-56 flex-col border-t border-slate-800 bg-slate-950 text-xs shadow-2xl">
+              {/* Terminal Header */}
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <Terminal className="size-4 text-emerald-400" />
+                  <span className="font-semibold text-slate-200">Live Execution Terminal</span>
+                  {runResult && (
+                    <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[11px] text-slate-300">
+                      {runResult.executionTimeMs}ms
+                    </span>
+                  )}
+                  {runResult && (
+                    <span
+                      className={cn(
+                        'rounded px-2 py-0.5 font-mono text-[11px] font-bold',
+                        runResult.status === 'PASSED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                      )}
+                    >
+                      {runResult.status} ({runResult.score}/100)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTerminalTab('console')}
+                    className={cn(
+                      'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                      terminalTab === 'console' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                    )}
+                  >
+                    Console Output
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerminalTab('tests')}
+                    className={cn(
+                      'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                      terminalTab === 'tests' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                    )}
+                  >
+                    Test Cases ({runResult?.testResults?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTerminalOpen(false)}
+                    className="ml-2 p-1 text-slate-400 hover:text-white"
+                  >
+                    <ChevronDown className="size-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Terminal Body */}
+              <div className="scrollbar-fine flex-1 overflow-y-auto p-4 font-mono">
+                {runningCode ? (
+                  <div className="flex items-center gap-2 text-slate-400 py-4">
+                    <Spinner label="Running code in execution sandbox…" />
+                  </div>
+                ) : !runResult ? (
+                  <span className="text-slate-500">Click "Run Code" to execute your solution.</span>
+                ) : terminalTab === 'console' ? (
+                  <div className="space-y-3">
+                    {runResult.stdout && (
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-sans font-semibold mb-1">
+                          Standard Output (stdout):
+                        </span>
+                        <pre className="text-emerald-300 whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                          {runResult.stdout}
+                        </pre>
+                      </div>
+                    )}
+                    {runResult.stderr && (
+                      <div>
+                        <span className="text-rose-400 block text-[10px] uppercase font-sans font-semibold mb-1">
+                          Errors / Stderr:
+                        </span>
+                        <pre className="text-rose-400 whitespace-pre-wrap bg-rose-950/40 p-3 rounded-lg border border-rose-900/40">
+                          {runResult.stderr}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {runResult.testResults.map((tc, idx) => (
+                      <div key={idx} className="rounded-lg border border-slate-800 bg-slate-900/60 p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-200">Test Case #{idx + 1}</span>
+                          <span
+                            className={cn(
+                              'font-bold text-xs px-2 py-0.5 rounded',
+                              tc.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                            )}
+                          >
+                            {tc.passed ? 'PASSED' : 'FAILED'}
+                          </span>
+                        </div>
+                        {tc.expectedOutput && (
+                          <div className="mt-2 text-slate-400 text-xs space-y-1">
+                            <div>
+                              Expected: <code className="text-slate-200 font-semibold">{tc.expectedOutput}</code>
+                            </div>
+                            <div>
+                              Actual:{' '}
+                              <code className={tc.passed ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                                {tc.actualOutput || 'None'}
+                              </code>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -98,6 +98,122 @@ export class SandboxRunnerService {
     return { status, score, testResults, executionLogs: globalLogs };
   }
 
+  async runLive(options: {
+    code: string;
+    language: ExecutionLanguage;
+    testCases?: Array<{ id: string; input: string; expectedOutput: string }>;
+    timeLimitMs?: number;
+  }): Promise<{
+    status: SubmissionStatus;
+    score: number;
+    stdout: string;
+    stderr: string;
+    executionTimeMs: number;
+    testResults: TestResult[];
+    executionLogs: string;
+  }> {
+    const runId = crypto.randomUUID();
+    const workDir = path.join(this.tempDir, runId);
+    await fs.mkdir(workDir, { recursive: true });
+
+    const codeFilePath = this.getFilePath(workDir, options.language);
+    await fs.writeFile(codeFilePath, options.code);
+
+    const timeLimit = options.timeLimitMs || 3000;
+    let stdout = '';
+    let stderr = '';
+    let executionTimeMs = 0;
+    const testResults: TestResult[] = [];
+    let passedCount = 0;
+
+    const startTime = Date.now();
+
+    try {
+      if (
+        options.language === ExecutionLanguage.PYTHON
+      ) {
+        const cmd = `python3 "${codeFilePath}"`;
+        const res = await this.execWithTimeout(cmd, timeLimit);
+        stdout = res.stdout;
+        stderr = res.stderr;
+        if (res.isTimeout) stderr += '\n[Error]: Execution Timed Out';
+      } else if (
+        options.language === ExecutionLanguage.CPP
+      ) {
+        const binPath = path.join(workDir, 'solution.out');
+        const compileRes = await this.execWithTimeout(`g++ "${codeFilePath}" -o "${binPath}"`, 5000);
+        if (compileRes.stderr && !compileRes.stdout) {
+          stderr = compileRes.stderr;
+        } else {
+          const res = await this.execWithTimeout(`"${binPath}"`, timeLimit);
+          stdout = res.stdout;
+          stderr = res.stderr;
+        }
+      } else {
+        // Node.js / JavaScript / TypeScript default runner
+        const cmd = `node "${codeFilePath}"`;
+        const res = await this.execWithTimeout(cmd, timeLimit);
+        stdout = res.stdout;
+        stderr = res.stderr;
+        if (res.isTimeout) stderr += '\n[Error]: Execution Timed Out';
+      }
+
+      executionTimeMs = Date.now() - startTime;
+
+      // Evaluate against test cases if available
+      const tcs = options.testCases || [];
+      if (tcs.length > 0) {
+        for (const tc of tcs) {
+          const actualOutput = stdout.trim();
+          const expectedOutput = (tc.expectedOutput || '').trim();
+          const passed = actualOutput.includes(expectedOutput) || actualOutput === expectedOutput;
+          if (passed) passedCount++;
+          testResults.push({
+            testCaseId: tc.id,
+            passed,
+            actualOutput,
+            expectedOutput,
+            executionTimeMs,
+            error: stderr || undefined,
+          });
+        }
+      } else {
+        // If no explicit test cases, pass if no severe error
+        passedCount = stderr ? 0 : 1;
+        testResults.push({
+          testCaseId: 'default',
+          passed: !stderr,
+          actualOutput: stdout,
+          expectedOutput: stdout,
+          executionTimeMs,
+          error: stderr || undefined,
+        });
+      }
+    } catch (err: any) {
+      stderr += `\nRuntime error: ${err?.message || err}`;
+    } finally {
+      await fs.rm(workDir, { recursive: true, force: true }).catch(() => {});
+    }
+
+    const total = options.testCases?.length || 1;
+    const score = Math.round((passedCount / total) * 100);
+    const status = score === 100 ? SubmissionStatus.PASSED : SubmissionStatus.FAILED;
+
+    const executionLogs = `[Console Standard Output]\n${stdout || '(No printed output)'}\n\n[Console Errors / Stderr]\n${
+      stderr || 'None'
+    }`;
+
+    return {
+      status,
+      score,
+      stdout: stdout || '(No printed output)',
+      stderr: stderr || '',
+      executionTimeMs,
+      testResults,
+      executionLogs,
+    };
+  }
+
   private getFilePath(dir: string, language: ExecutionLanguage): string {
     switch (language) {
       case ExecutionLanguage.PYTHON:
@@ -126,12 +242,6 @@ export class SandboxRunnerService {
         ? `python3 /sandbox/${codeFileName} < /sandbox/${inputFileName}`
         : `node /sandbox/${codeFileName} < /sandbox/${inputFileName}`;
 
-    // Security Constraints:
-    // --network none         : No outbound internet access
-    // --memory & --memory-swap: Strict RAM quota
-    // --cpus 0.5             : Restrict CPU consumption
-    // --read-only            : Prevent filesystem tampering
-    // --user 1000:1000       : Unprivileged container user
     return `docker run --rm \
       --network none \
       --memory="${memoryLimitMb}m" \
@@ -155,3 +265,4 @@ export class SandboxRunnerService {
     });
   }
 }
+

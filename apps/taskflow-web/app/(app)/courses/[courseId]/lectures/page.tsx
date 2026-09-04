@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, NotebookPen, Plus, Video, Calendar, Sparkles, Play } from 'lucide-react';
+import { ArrowLeft, NotebookPen, Plus, Video, Calendar, Sparkles, Play, BookOpen } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { lecturesApi } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
@@ -147,15 +147,18 @@ export default function CourseLecturesPage() {
                 className={`overflow-hidden border ${colorTheme.border} ${colorTheme.bg} shadow-md transition-all hover:shadow-lg`}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-border/60 bg-surface-1/80 px-6 py-4 backdrop-blur-xs">
-                  <div className="flex items-center gap-3">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${colorTheme.badge}`}>
+                <div className="flex flex-col gap-3 border-b border-border/60 bg-surface-1/90 px-6 py-5 backdrop-blur-xs sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${colorTheme.badge}`}>
                       Lecture
                     </span>
-                    <h3 className="text-base font-semibold text-fg">{lecture.title}</h3>
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-fg font-heading tracking-tight flex items-center gap-2">
+                      <BookOpen className={`size-5.5 ${colorTheme.text}`} />
+                      {lecture.title}
+                    </h3>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-fg-subtle">
-                    <Calendar className="size-3.5" />
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-fg-subtle bg-surface-2/80 border border-border/60 px-3 py-1.5 rounded-lg shrink-0">
+                    <Calendar className="size-3.5 text-accent" />
                     {formatDateOnly(lecture.date)}
                   </span>
                 </div>

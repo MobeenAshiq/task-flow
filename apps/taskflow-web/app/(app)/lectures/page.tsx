@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { NotebookPen, Calendar, Sparkles, Video } from 'lucide-react';
+import { NotebookPen, Calendar, Sparkles, Video, BookOpen } from 'lucide-react';
 import { coursesApi, lecturesApi } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
 import type { Course, Lecture } from '@/lib/types';
@@ -127,20 +127,21 @@ export default function LecturesPage() {
                 className={`overflow-hidden border ${colorTheme.border} ${colorTheme.bg} shadow-md transition-all hover:shadow-lg`}
               >
                 {/* Header */}
-                <div className="flex flex-col gap-2 border-b border-border/60 bg-surface-1/80 px-6 py-4 backdrop-blur-xs sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${colorTheme.badge}`}>
+                <div className="flex flex-col gap-3 border-b border-border/60 bg-surface-1/90 px-6 py-5 backdrop-blur-xs sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${colorTheme.badge}`}>
                       {lecture.courseTitle}
                     </span>
                     <Link
                       href={`/courses/${lecture.courseId}/lectures`}
-                      className="text-base font-semibold text-fg hover:text-accent"
+                      className="text-xl sm:text-2xl font-extrabold text-fg font-heading tracking-tight flex items-center gap-2 hover:text-accent transition-colors"
                     >
+                      <BookOpen className={`size-5.5 ${colorTheme.text}`} />
                       {lecture.title}
                     </Link>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-fg-subtle">
-                    <Calendar className="size-3.5" />
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-fg-subtle bg-surface-2/80 border border-border/60 px-3 py-1.5 rounded-lg shrink-0">
+                    <Calendar className="size-3.5 text-accent" />
                     {formatDateOnly(lecture.date)}
                   </span>
                 </div>
