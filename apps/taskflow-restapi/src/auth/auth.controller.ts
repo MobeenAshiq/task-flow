@@ -5,6 +5,8 @@ import { RegisterDto } from './dto/register.dto';
 import { SendPinDto } from './dto/send-pin.dto';
 import { VerifyPinDto } from './dto/verify-pin.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
@@ -35,6 +37,12 @@ export class AuthController {
     return { success: true, response: result };
   }
 
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
+    return { success: true, response: result };
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
@@ -46,6 +54,13 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const result = await this.authService.updateProfile(req.user.id, dto);
+    return { success: true, response: result };
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
+    const result = await this.authService.changePassword(req.user.id, dto);
     return { success: true, response: result };
   }
 }

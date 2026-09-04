@@ -18,6 +18,8 @@ import {
   Save,
   CheckCircle2,
   Sparkles,
+  KeyRound,
+  Lock,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -29,6 +31,14 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Change Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdSuccessMsg, setPwdSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -71,6 +81,30 @@ export default function ProfilePage() {
       setError(err instanceof ApiRequestError ? err.message : 'Failed to update profile.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setPwdError('New password and confirmation do not match.');
+      return;
+    }
+    setPwdSaving(true);
+    setPwdError(null);
+    setPwdSuccessMsg(null);
+
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
+      setPwdSuccessMsg('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPwdSuccessMsg(null), 3000);
+    } catch (err) {
+      setPwdError(err instanceof ApiRequestError ? err.message : 'Failed to change password.');
+    } finally {
+      setPwdSaving(false);
     }
   };
 
@@ -137,7 +171,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Edit Form */}
+      {/* Edit Personal Info Form */}
       <Card className="border border-border-strong bg-surface-1 p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
           <div>
@@ -193,7 +227,83 @@ export default function ProfilePage() {
           <div className="pt-2 flex justify-end">
             <Button type="submit" loading={saving}>
               <Save className="size-4" />
-              Save Changes
+              Save Profile Changes
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Change Password Card */}
+      <Card className="border border-border-strong bg-surface-1 p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-fg">Change Password</h2>
+            <p className="text-xs text-fg-subtle">
+              Update your account password. Must be at least 6 characters.
+            </p>
+          </div>
+          <KeyRound className="size-4 text-accent" />
+        </div>
+
+        {pwdError && <ErrorNote message={pwdError} />}
+
+        {pwdSuccessMsg && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-success/30 bg-success/10 p-3.5 text-xs font-medium text-success">
+            <CheckCircle2 className="size-4" />
+            {pwdSuccessMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+              <Lock className="size-3.5 text-accent" />
+              Current Password
+            </label>
+            <Input
+              type="password"
+              required
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+                <Lock className="size-3.5 text-accent" />
+                New Password
+              </label>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                placeholder="At least 6 characters"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+                <Lock className="size-3.5 text-accent" />
+                Confirm New Password
+              </label>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                placeholder="Repeat new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <Button type="submit" loading={pwdSaving}>
+              <KeyRound className="size-4" />
+              Update Password
             </Button>
           </div>
         </form>

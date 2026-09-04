@@ -379,12 +379,25 @@ export default function DashboardPage() {
   return (
     <div className="p-5 lg:p-6 space-y-5 max-w-[1400px] mx-auto">
 
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-fg tracking-tight">Overview</h2>
-        <p className="text-xs text-fg-muted mt-0.5">
-          Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}. Here's your TaskFlow overview.
-        </p>
+      {/* Hero Banner Card */}
+      <div className="relative overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-r from-surface-1 via-surface-2 to-surface-1 p-6 shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2 max-w-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent backdrop-blur-xs">
+              <Zap className="size-3.5" />
+              <span>Computer Science Learning Hub</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-fg">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-info">{user?.name || 'Developer'}</span>!
+            </h1>
+            <p className="text-xs sm:text-sm text-fg-muted">
+              Manage your interactive courses, submit assignments, analyze code complexity, and track your learning progress.
+            </p>
+          </div>
+          <div className="relative shrink-0 overflow-hidden rounded-xl border border-accent/30 shadow-lg max-w-xs w-full h-32 md:h-36">
+            <img src="/banner.jpg" alt="TaskFlow Banner" className="size-full object-cover opacity-90 transition-transform duration-500 hover:scale-105" />
+          </div>
+        </div>
       </div>
 
       {error && <ErrorNote message={error} />}

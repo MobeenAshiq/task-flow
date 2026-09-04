@@ -43,6 +43,16 @@ export const authApi = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    fetcher<{ message: string }>('auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  resetPassword: (email: string, pin: string, newPassword: string) =>
+    fetcher<{ message: string }>('auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, pin, newPassword }),
+    }),
 };
 
 export const coursesApi = {
