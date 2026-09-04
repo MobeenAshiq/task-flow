@@ -2,7 +2,9 @@ import { Injectable, UnauthorizedException, ConflictException, Logger, BadReques
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { UserEntity, UserRole } from '@taskflow/shared';
+import { RedisService } from '../redis/redis.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SendPinDto } from './dto/send-pin.dto';
@@ -12,16 +14,23 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from './interface/auth-response.interface';
 
+const PIN_TTL_SECONDS = 10 * 60; // 10 minutes
+const BCRYPT_SALT_ROUNDS = 10;
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly pinStore = new Map<string, { pin: string; expiresAt: number }>();
 
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
   ) {}
+
+  private pinKey(email: string) {
+    return `auth:pin:${email}`;
+  }
 
   async register(dto: RegisterDto & { name?: string; role?: UserRole; phone?: string }): Promise<AuthResponse> {
     const existing = await this.userRepo.findOne({ where: { email: dto.email } });
@@ -29,10 +38,11 @@ export class AuthService {
       throw new ConflictException('Email already registered');
     }
 
+    const hashedPassword = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
     const user = this.userRepo.create({
       name: dto.name || dto.email.split('@')[0],
       email: dto.email,
-      password: dto.password,
+      password: hashedPassword,
       role: dto.role || UserRole.STUDENT,
       phone: dto.phone,
       isApproved: dto.role === UserRole.TEACHER || dto.role === UserRole.ADMIN,
@@ -72,7 +82,7 @@ export class AuthService {
       },
     });
 
-    if (!user || user.password !== dto.password) {
+    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -103,9 +113,8 @@ export class AuthService {
 
     // Generate a 6-digit numeric OTP verification PIN
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
 
-    this.pinStore.set(email, { pin, expiresAt });
+    await this.redisService.getClient().set(this.pinKey(email), pin, 'EX', PIN_TTL_SECONDS);
     // TODO: send `pin` via email once a mail provider is configured. Never return it to the client.
     this.logger.log(`Verification PIN generated for ${email}`);
 
@@ -117,25 +126,26 @@ export class AuthService {
 
   async verifyPin(dto: VerifyPinDto): Promise<AuthResponse> {
     const email = dto.email.toLowerCase().trim();
-    const stored = this.pinStore.get(email);
+    const storedPin = await this.redisService.getClient().get(this.pinKey(email));
 
-    if (!stored || Date.now() > stored.expiresAt) {
+    if (!storedPin) {
       throw new UnauthorizedException('Verification PIN has expired or does not exist. Please request a new PIN.');
     }
 
-    if (stored.pin !== dto.pin.trim()) {
+    if (storedPin !== dto.pin.trim()) {
       throw new UnauthorizedException('Invalid verification PIN. Please check your email and try again.');
     }
 
     // Clear used PIN
-    this.pinStore.delete(email);
+    await this.redisService.getClient().del(this.pinKey(email));
 
     let user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
+      const randomPassword = await bcrypt.hash(`GmailAuth_${Math.random().toString(36).slice(-8)}!`, BCRYPT_SALT_ROUNDS);
       user = this.userRepo.create({
         name: dto.name || email.split('@')[0],
         email,
-        password: `GmailAuth_${Math.random().toString(36).slice(-8)}!`,
+        password: randomPassword,
         role: dto.role || UserRole.STUDENT,
         isApproved: dto.role === UserRole.TEACHER || dto.role === UserRole.ADMIN,
       });
@@ -210,11 +220,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    if (user.password !== dto.currentPassword) {
+    if (!(await bcrypt.compare(dto.currentPassword, user.password))) {
       throw new BadRequestException('Current password is incorrect');
     }
 
-    user.password = dto.newPassword;
+    user.password = await bcrypt.hash(dto.newPassword, BCRYPT_SALT_ROUNDS);
     await this.userRepo.save(user);
 
     return { message: 'Password changed successfully' };
@@ -222,24 +232,24 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     const email = dto.email.toLowerCase().trim();
-    const stored = this.pinStore.get(email);
+    const storedPin = await this.redisService.getClient().get(this.pinKey(email));
 
-    if (!stored || Date.now() > stored.expiresAt) {
+    if (!storedPin) {
       throw new UnauthorizedException('Reset PIN has expired or does not exist. Please request a new PIN.');
     }
 
-    if (stored.pin !== dto.pin.trim()) {
+    if (storedPin !== dto.pin.trim()) {
       throw new UnauthorizedException('Invalid reset PIN.');
     }
 
-    this.pinStore.delete(email);
+    await this.redisService.getClient().del(this.pinKey(email));
 
     const user = await this.userRepo.findOne({ where: { email } });
     if (!user) {
       throw new BadRequestException('User with this email was not found.');
     }
 
-    user.password = dto.newPassword;
+    user.password = await bcrypt.hash(dto.newPassword, BCRYPT_SALT_ROUNDS);
     await this.userRepo.save(user);
 
     return { message: 'Password reset successfully. You can now sign in with your new password.' };
