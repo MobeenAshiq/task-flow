@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, ChevronDown, LayoutDashboard, LogOut, Menu, Video, X } from 'lucide-react';
+import { BookOpen, ChevronDown, LayoutDashboard, LogOut, Menu, User, Video, X } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { RoleBadge } from '@/components/layout/RoleBadge';
 
@@ -11,12 +11,14 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/courses',   label: 'Courses',   icon: BookOpen },
   { href: '/lectures',  label: 'Lectures',  icon: Video },
+  { href: '/profile',   label: 'Profile',   icon: User },
 ];
 
 const SECTION_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/courses':   'Courses',
   '/lectures':  'Lectures',
+  '/profile':   'User Profile',
 };
 
 export function Navbar() {
@@ -72,8 +74,17 @@ export function Navbar() {
             <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
             <div className="absolute right-0 top-11 z-40 w-48 rounded-lg border border-border-strong bg-surface-2 py-1 shadow-xl shadow-black/40">
               <div className="border-b border-border px-3 py-2">
-                <p className="truncate text-xs font-medium text-fg">{user?.email}</p>
+                <p className="truncate text-xs font-medium text-fg">{user?.name || user?.email}</p>
+                <p className="truncate text-[11px] text-fg-subtle">{user?.email}</p>
               </div>
+              <Link
+                href="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-fg hover:bg-surface-3"
+              >
+                <User className="size-3.5 text-accent" />
+                My Profile
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-danger hover:bg-surface-3"

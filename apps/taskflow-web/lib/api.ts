@@ -4,6 +4,7 @@ import type {
   AuthUser,
   Course,
   CourseDetail,
+  CourseStudent,
   ExecutionLanguage,
   Lecture,
   SubmissionRow,
@@ -12,7 +13,7 @@ import type {
 
 interface AuthResponse {
   accessToken: string;
-  user: { id: string; email: string };
+  user: AuthUser;
 }
 
 export const authApi = {
@@ -26,7 +27,22 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify({ email, password, name, role }),
     }),
+  sendPin: (email: string) =>
+    fetcher<{ message: string; email: string; devPin?: string }>('auth/send-pin', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  verifyPin: (email: string, pin: string, name?: string, role?: UserRole) =>
+    fetcher<AuthResponse>('auth/verify-pin', {
+      method: 'POST',
+      body: JSON.stringify({ email, pin, name, role }),
+    }),
   me: () => fetcher<AuthUser>('auth/me'),
+  updateProfile: (payload: { name?: string; email?: string; phone?: string; avatarUrl?: string }) =>
+    fetcher<AuthUser>('auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const coursesApi = {
@@ -42,11 +58,19 @@ export const coursesApi = {
       method: 'POST',
       body: JSON.stringify({ joinCode }),
     }),
+  listStudents: (courseId: string) => fetcher<CourseStudent[]>(`courses/${courseId}/students`),
+  approveStudent: (courseId: string, studentId: string) =>
+    fetcher<{ success: boolean }>(`courses/${courseId}/students/${studentId}/approve`, {
+      method: 'PATCH',
+    }),
+  rejectStudent: (courseId: string, studentId: string) =>
+    fetcher<{ success: boolean }>(`courses/${courseId}/students/${studentId}/reject`, {
+      method: 'PATCH',
+    }),
 };
 
 export const assignmentsApi = {
-  listByCourse: (courseId: string) =>
-    fetcher<Assignment[]>(`assignments/course/${courseId}`),
+  listByCourse: (courseId: string) => fetcher<Assignment[]>(`assignments/course/${courseId}`),
   get: (id: string) => fetcher<Assignment>(`assignments/${id}`),
   create: (payload: {
     title: string;
@@ -110,7 +134,14 @@ export const aiApi = {
 
 export const lecturesApi = {
   listByCourse: (courseId: string) => fetcher<Lecture[]>(`lectures/course/${courseId}`),
-  create: (payload: { title: string; content: string; date: string; courseId: string }) =>
+  create: (payload: {
+    title: string;
+    content: string;
+    date: string;
+    courseId: string;
+    videoUrl?: string;
+    colorTag?: string;
+  }) =>
     fetcher<Lecture>('lectures', {
       method: 'POST',
       body: JSON.stringify(payload),

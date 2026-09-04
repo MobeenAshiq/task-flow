@@ -8,6 +8,8 @@ import { RegisterDto } from './dto/register.dto';
 import { SendPinDto } from './dto/send-pin.dto';
 import { VerifyPinDto } from './dto/verify-pin.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponse } from './interface/auth-response.interface';
 
 @Injectable()
@@ -112,7 +114,6 @@ export class AuthService {
     return {
       message: `Verification PIN has been sent to ${email}`,
       email,
-      // Returning pin in dev environment so user can easily copy/paste or see it immediately
       devPin: pin,
     };
   }
@@ -200,5 +201,50 @@ export class AuthService {
       isApproved: updated.isApproved,
       avatarUrl: updated.avatarUrl,
     };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (user.password !== dto.currentPassword) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    user.password = dto.newPassword;
+    await this.userRepo.save(user);
+
+    return { message: 'Password changed successfully' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const email = dto.email.toLowerCase().trim();
+    const stored = this.pinStore.get(email);
+
+    if (!stored || Date.now() > stored.expiresAt) {
+      throw new UnauthorizedException('Reset PIN has expired or does not exist. Please request a new PIN.');
+    }
+
+    if (stored.pin !== dto.pin.trim()) {
+      throw new UnauthorizedException('Invalid reset PIN.');
+    }
+
+    this.pinStore.delete(email);
+
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('User with this email was not found.');
+    }
+
+    user.password = dto.newPassword;
+    await this.userRepo.save(user);
+
+    return { message: 'Password reset successfully. You can now sign in with your new password.' };
   }
 }

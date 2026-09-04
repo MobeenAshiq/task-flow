@@ -28,6 +28,9 @@ export interface AuthUser {
   email: string;
   name?: string;
   role: UserRole;
+  phone?: string;
+  isApproved?: boolean;
+  avatarUrl?: string;
 }
 
 export interface Course {
@@ -50,12 +53,29 @@ export interface Lecture {
   courseId: string;
   creatorId: string;
   createdAt: string;
+  videoUrl?: string;
+  colorTag?: string;
 }
 
 export interface RosterEntry {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  isApproved?: boolean;
+  membershipStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  joinedAt: string;
+}
+
+export interface CourseStudent {
+  membershipId: string;
+  studentId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatarUrl?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  isApproved: boolean;
   joinedAt: string;
 }
 

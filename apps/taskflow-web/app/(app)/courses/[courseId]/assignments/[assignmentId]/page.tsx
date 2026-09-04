@@ -290,7 +290,8 @@ export default function StudentWorkspacePage() {
 
   if (!assignment) return null;
 
-  const locked = !!submission && !editingUnlocked;
+  const isPastDeadline = assignment.dueDate ? new Date() > new Date(assignment.dueDate) : false;
+  const locked = isPastDeadline || (!!submission && !editingUnlocked);
   const statusMeta = submission ? submissionStatusMeta[submission.status] : null;
 
   return (
@@ -301,7 +302,9 @@ export default function StudentWorkspacePage() {
             <ArrowLeft className="size-4" />
           </Link>
           <h1 className="truncate text-sm font-semibold text-fg">{assignment.title}</h1>
-          <span className="hidden shrink-0 text-xs text-fg-subtle sm:inline">Due {formatDate(assignment.dueDate)}</span>
+          <span className="hidden shrink-0 text-xs text-fg-subtle sm:inline">
+            Due {formatDate(assignment.dueDate)} {isPastDeadline && '(Passed)'}
+          </span>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -314,15 +317,19 @@ export default function StudentWorkspacePage() {
           {submission?.grade != null && (
             <span className="font-mono text-xs font-semibold text-success">{submission.grade}/100</span>
           )}
-          {locked ? (
+          {isPastDeadline ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 px-3 py-1.5 text-xs font-semibold text-danger">
+              Submissions Closed (Deadline Passed)
+            </span>
+          ) : locked ? (
             <Button size="sm" variant="secondary" onClick={() => setEditingUnlocked(true)}>
               <PenLine className="size-3.5" />
-              Resubmit
+              Update Submission
             </Button>
           ) : (
             <Button size="sm" onClick={handleSubmit} loading={submitting}>
               <CheckCircle2 className="size-3.5" />
-              Submit assignment
+              {submission ? 'Update Submission' : 'Submit Assignment'}
             </Button>
           )}
         </div>
