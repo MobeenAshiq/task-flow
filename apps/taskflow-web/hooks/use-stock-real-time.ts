@@ -3,8 +3,16 @@
 import { useEffect, useState } from 'react';
 import { getStocksSocket } from '@/lib/socket';
 
+export interface StockPriceData {
+  ticker: string;
+  price: number;
+  change?: number;
+  timestamp?: number;
+  [key: string]: unknown;
+}
+
 export function useStockRealTime(ticker: string, userToken: string) {
-  const [priceData, setPriceData] = useState<any>(null);
+  const [priceData, setPriceData] = useState<StockPriceData | null>(null);
 
   useEffect(() => {
     if (!userToken || !ticker) return;
@@ -13,7 +21,7 @@ export function useStockRealTime(ticker: string, userToken: string) {
 
     socket.emit('subscribe:stock', { ticker });
 
-    const handlePriceUpdate = (data: any) => {
+    const handlePriceUpdate = (data: StockPriceData) => {
       if (data.ticker === ticker) {
         setPriceData(data);
       }
