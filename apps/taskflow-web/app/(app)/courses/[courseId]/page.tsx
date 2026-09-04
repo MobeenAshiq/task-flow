@@ -114,9 +114,9 @@ export default function CourseDetailPage() {
 
       <Link
         href={`/courses/${courseId}/lectures`}
-        className={buttonVariants('secondary', 'sm', 'w-fit')}
+        className="flex items-center gap-3 rounded-md border border-border-strong bg-surface-1 px-3.5 py-2.5 text-sm font-medium text-fg-muted transition-colors hover:border-accent/40 hover:bg-surface-2 hover:text-fg"
       >
-        <NotebookPen className="size-4" />
+        <NotebookPen className="size-4.5 shrink-0" />
         Lectures
       </Link>
 

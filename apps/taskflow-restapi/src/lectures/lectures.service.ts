@@ -30,6 +30,8 @@ export class LecturesService {
       date: new Date(dto.date),
       courseId: dto.courseId,
       creatorId: teacherId,
+      videoUrl: dto.videoUrl,
+      colorTag: dto.colorTag || 'emerald',
     });
     return await this.lectureRepo.save(lecture);
   }

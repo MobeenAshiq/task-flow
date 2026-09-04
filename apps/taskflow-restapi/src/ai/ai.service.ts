@@ -1,14 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { GradeDraftDto } from './dto/grade-draft.dto';
 import { GenerateAssignmentDto } from './dto/generate-assignment.dto';
 import { SocraticHintDto } from './dto/socratic-hint.dto';
 import { ExplainErrorDto } from './dto/explain-error.dto';
 import { AnalyzeCodeDto } from './dto/analyze-code.dto';
 import { ClassInsightsDto } from './dto/class-insights.dto';
+import { AskQuestionDto } from './dto/ask-question.dto';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
+
+  constructor(private readonly configService: ConfigService) {}
 
   /**
    * 1A. Smart Grading Assistant & Draft Feedback
@@ -98,13 +102,22 @@ export class AiService {
     // SYSTEM PROMPT GUARDRAIL ENFORCEMENT:
     // "You are an AI TA for introductory CS. Review student code and error. Give 2-sentence hint explaining why error happens. DO NOT write or provide corrected code snippets."
 
-    const hasLoop = dto.studentCode.includes('for') || dto.studentCode.includes('while');
+    const code = dto.studentCode || '';
+    const errorOutput = dto.errorOutput || '';
+    const loopCount = (code.match(/\bfor\b/g) || []).length + (code.match(/\bwhile\b/g) || []).length;
+    const hasNestedLoop = loopCount >= 2;
+    const usesHashMap = /\bdict\(|\{\}|new Map\(|new Set\(/.test(code);
 
-    let hint = 'Take a look at your loop bounds and data structure initialization. Are you checking if the key exists before querying it?';
-    if (dto.errorOutput?.includes('IndexError') || dto.errorOutput?.includes('undefined')) {
-      hint = 'Notice how your loop index increments past the length of the array. What happens on the final iteration when reaching `len(nums)`?';
-    } else if (hasLoop) {
-      hint = 'Think about how many times your loop runs for each element. Could you record numbers you have already seen in a dictionary to avoid nested scanning?';
+    let hint =
+      'Try tracing through your function by hand with a few sample inputs, including edge cases like zero, negative numbers, or empty input. Does every path return what you expect?';
+    if (errorOutput.includes('IndexError') || errorOutput.includes('out of bounds') || errorOutput.includes('undefined')) {
+      hint = 'Notice how your loop index increments past the length of the array. What happens on the final iteration when reaching the end of your data structure?';
+    } else if (errorOutput.includes('TypeError') || errorOutput.includes('NoneType')) {
+      hint = 'One of your variables may not hold the type of value you expect at that point. Check what each variable actually contains right before the failing line.';
+    } else if (errorOutput.includes('KeyError')) {
+      hint = 'You are looking up a key that may not exist yet. Have you checked whether the key is present before accessing it?';
+    } else if (hasNestedLoop && !usesHashMap) {
+      hint = 'Your nested loops mean you re-scan data for every element. Could you record what you have already seen in a dictionary/set to avoid the repeated scan?';
     }
 
     return {
@@ -147,21 +160,99 @@ export class AiService {
   async analyzeComplexityAndStyle(dto: AnalyzeCodeDto) {
     this.logger.log(`Performing Big-O & clean code style check`);
 
-    const hasNestedLoop = (dto.studentCode.match(/for/g) || []).length >= 2 || (dto.studentCode.match(/while/g) || []).length >= 2;
-    const timeComplexity = hasNestedLoop ? 'O(n²)' : 'O(n)';
-    const spaceComplexity = dto.studentCode.includes('dict') || dto.studentCode.includes('{') ? 'O(n)' : 'O(1)';
+    const code = dto.studentCode || '';
+    const lines = code.split('\n');
+    const loopCount = (code.match(/\bfor\b/g) || []).length + (code.match(/\bwhile\b/g) || []).length;
+    const hasNestedLoop = loopCount >= 2;
+    const timeComplexity = hasNestedLoop ? 'O(n²)' : loopCount >= 1 ? 'O(n)' : 'O(1)';
+    const usesHashMap = /\bdict\(|\{\}|new Map\(|new Set\(/.test(code);
+    const spaceComplexity = usesHashMap ? 'O(n)' : 'O(1)';
+
+    const singleLetterVars = (code.match(/\b(?:let|const|var)\s+[a-hj-mo-z]\b/g) || []).length;
+    const inconsistentIndent = lines.some((l) => /^\t/.test(l)) && lines.some((l) => /^ {2,}/.test(l));
+
+    const styleSuggestions: string[] = [
+      singleLetterVars > 0
+        ? 'Consider using more descriptive variable names instead of single letters (loop counters like i/j/k/n are fine).'
+        : 'Variable naming looks clear and descriptive.',
+      hasNestedLoop
+        ? 'Notice: time complexity is quadratic O(n²). Consider using a hash map/set to reduce it to linear O(n).'
+        : 'Time complexity looks linear or better — nice.',
+    ];
+    if (inconsistentIndent) {
+      styleSuggestions.push('Formatting mixes tabs and spaces for indentation — pick one for consistency.');
+    }
+
+    const readabilityScore = Math.max(
+      50,
+      100 - singleLetterVars * 5 - (hasNestedLoop ? 10 : 0) - (inconsistentIndent ? 15 : 0)
+    );
 
     return {
       timeComplexity,
       spaceComplexity,
-      styleSuggestions: [
-        'Variable naming is clear and descriptive.',
-        hasNestedLoop
-          ? 'Notice: Time complexity is quadratic O(n²). Consider using a hash map to reduce time complexity to linear O(n).'
-          : 'Great job! Time complexity is linear O(n).',
-        'Clean formatting with consistent indentations.',
-      ],
-      readabilityScore: 92,
+      styleSuggestions,
+      readabilityScore,
     };
+  }
+
+  /**
+   * 2D. Ask-a-question chat (general coding Q&A, backed by Groq's OpenAI-compatible API)
+   */
+  async askCodingQuestion(dto: AskQuestionDto) {
+    const apiKey = this.configService.get<string>('GROQ_API_KEY');
+    if (!apiKey) {
+      throw new ServiceUnavailableException('The AI assistant is not configured yet. Please contact your administrator.');
+    }
+
+    const baseUrl = this.configService.get<string>('GROQ_BASE_URL', 'https://api.groq.com/openai/v1');
+    const model = this.configService.get<string>('GROQ_MODEL', 'openai/gpt-oss-20b');
+
+    const messages = [
+      {
+        role: 'system',
+        content:
+          'You are a friendly teaching assistant for an intro-to-programming course. Answer general coding questions ' +
+          '(syntax, concepts, debugging, best practices) clearly and concisely, using short illustrative examples where ' +
+          "helpful. If the student's own assignment code is included as context, do not write the complete solution for " +
+          'them — explain the relevant concept so they can apply it themselves.',
+      },
+      ...(dto.context ? [{ role: 'user', content: `My current code for context:\n\n${dto.context}` }] : []),
+      { role: 'user', content: dto.question },
+    ];
+
+    let response: Response;
+    try {
+      response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ model, messages, temperature: 0.4, max_tokens: 700 }),
+      });
+    } catch (err) {
+      this.logger.error(`Failed to reach Groq API: ${err instanceof Error ? err.message : err}`);
+      throw new ServiceUnavailableException('Could not reach the AI assistant right now. Please try again shortly.');
+    }
+
+    if (response.status === 429) {
+      throw new HttpException(
+        "The AI assistant is receiving a lot of requests right now. Please wait a moment and try again.",
+        429
+      );
+    }
+    if (!response.ok) {
+      this.logger.error(`Groq API error ${response.status}: ${await response.text()}`);
+      throw new ServiceUnavailableException('The AI assistant could not answer that just now. Please try again.');
+    }
+
+    const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
+    const answer = data.choices?.[0]?.message?.content?.trim();
+    if (!answer) {
+      throw new ServiceUnavailableException('The AI assistant did not return an answer. Please try again.');
+    }
+
+    return { answer };
   }
 }

@@ -4,14 +4,26 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, CheckCircle2, Copy, Lightbulb, PenLine, ScanSearch, ShieldBan, Sparkles } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Lightbulb,
+  MessageCircleQuestion,
+  PenLine,
+  ScanSearch,
+  SendHorizontal,
+  ShieldBan,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import { aiApi, assignmentsApi, type CodeAnalysis, type SocraticHint } from '@/lib/api';
 import { ApiRequestError } from '@/lib/fetch';
 import { useSubmissionStream } from '@/hooks/use-submission-stream';
 import { formatDate, languageMeta, submissionStatusMeta } from '@/lib/status';
 import { ExecutionLanguage, SubmissionStatus, type Assignment, type AssignmentSubmissionSummary } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Field';
+import { Select, Textarea } from '@/components/ui/Field';
 import { Spinner } from '@/components/ui/Spinner';
 import { ErrorNote } from '@/components/ui/ErrorNote';
 import { StatusDot } from '@/components/ui/StatusDot';
@@ -61,10 +73,12 @@ export default function StudentWorkspacePage() {
   const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
 
   const [leftTab, setLeftTab] = useState<'instructions' | 'ai'>('instructions');
-  const [aiLoading, setAiLoading] = useState<'analyze' | 'hint' | null>(null);
+  const [aiLoading, setAiLoading] = useState<'analyze' | 'hint' | 'ask' | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [codeAnalysis, setCodeAnalysis] = useState<CodeAnalysis | null>(null);
   const [hint, setHint] = useState<SocraticHint | null>(null);
+  const [question, setQuestion] = useState('');
+  const [qaHistory, setQaHistory] = useState<{ question: string; answer: string }[]>([]);
 
   const draftKey = `draft_assignment_${assignmentId}`;
   const liveSubmission = useSubmissionStream(submission?.id || '');
@@ -242,6 +256,22 @@ export default function StudentWorkspacePage() {
     }
   }, [assignment, code]);
 
+  const handleAskQuestion = useCallback(async () => {
+    const q = question.trim();
+    if (!q) return;
+    setAiLoading('ask');
+    setAiError(null);
+    try {
+      const { answer } = await aiApi.ask(q, code || undefined);
+      setQaHistory((prev) => [...prev, { question: q, answer }]);
+      setQuestion('');
+    } catch (err) {
+      setAiError(err instanceof ApiRequestError ? err.message : 'Could not get an answer right now.');
+    } finally {
+      setAiLoading(null);
+    }
+  }, [question, code]);
+
   if (loading) {
     return (
       <div className="p-8">
@@ -333,79 +363,174 @@ export default function StudentWorkspacePage() {
               <MarkdownView content={assignment.description} />
             ) : (
               <div className="space-y-5">
-                <p className="text-xs text-fg-muted">
-                  Get feedback on your own code — this never writes or completes it for you.
-                </p>
+                {/* Header Banner */}
+                <div className="flex items-center justify-between rounded-xl border border-accent/20 bg-accent/5 p-3.5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                      <Sparkles className="size-4.5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-fg">AI Teaching Assistant</h3>
+                      <p className="text-[11px] text-fg-muted">
+                        Socratic tutor &amp; code analysis — guides your learning without spoiling answers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
+                {/* Quick Action Buttons */}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={handleCheckCode}
                     disabled={aiLoading !== null || !code.trim()}
-                    className="flex items-start gap-2.5 rounded-lg border border-border-strong bg-surface-1 p-3 text-left transition-colors hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex items-start gap-3 rounded-xl border border-border-strong bg-surface-1 p-3.5 text-left transition-all hover:border-accent/50 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <ScanSearch className="mt-0.5 size-4 shrink-0 text-accent" />
-                    <span>
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent transition-transform group-hover:scale-110">
+                      <ScanSearch className="size-4" />
+                    </div>
+                    <div>
                       <span className="block text-xs font-semibold text-fg">
-                        {aiLoading === 'analyze' ? 'Checking your code…' : 'Check my code'}
+                        {aiLoading === 'analyze' ? 'Checking code…' : 'Check My Code'}
                       </span>
                       <span className="block text-[11px] text-fg-subtle">Complexity &amp; style review</span>
-                    </span>
+                    </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleGetHint}
                     disabled={aiLoading !== null || !code.trim()}
-                    className="flex items-start gap-2.5 rounded-lg border border-border-strong bg-surface-1 p-3 text-left transition-colors hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex items-start gap-3 rounded-xl border border-border-strong bg-surface-1 p-3.5 text-left transition-all hover:border-warning/50 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Lightbulb className="mt-0.5 size-4 shrink-0 text-warning" />
-                    <span>
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning transition-transform group-hover:scale-110">
+                      <Lightbulb className="size-4" />
+                    </div>
+                    <div>
                       <span className="block text-xs font-semibold text-fg">
-                        {aiLoading === 'hint' ? 'Thinking…' : 'What should I do next?'}
+                        {aiLoading === 'hint' ? 'Thinking…' : 'What Should I Do Next?'}
                       </span>
-                      <span className="block text-[11px] text-fg-subtle">A hint, never the solution</span>
-                    </span>
+                      <span className="block text-[11px] text-fg-subtle">Get a Socratic hint</span>
+                    </div>
                   </button>
                 </div>
 
+                {/* Chat History Feed */}
+                {qaHistory.length > 0 && (
+                  <div className="space-y-4 pt-1">
+                    {qaHistory.map((qa, i) => (
+                      <div key={i} className="space-y-3">
+                        {/* Student Question Bubble */}
+                        <div className="flex items-start justify-end gap-2.5">
+                          <div className="max-w-[85%] rounded-2xl rounded-tr-xs border border-accent/30 bg-accent/10 px-4 py-2.5 text-xs font-medium text-fg shadow-xs">
+                            {qa.question}
+                          </div>
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-3 text-fg-subtle">
+                            <User className="size-3.5" />
+                          </div>
+                        </div>
+
+                        {/* AI Response Card */}
+                        <div className="flex items-start gap-2.5">
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full border border-accent/40 bg-accent/20 text-accent">
+                            <Sparkles className="size-3.5" />
+                          </div>
+                          <div className="min-w-0 flex-1 rounded-2xl rounded-tl-xs border border-border-strong bg-surface-1 p-4 shadow-sm">
+                            <div className="mb-2.5 flex items-center justify-between border-b border-border pb-1.5">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
+                                AI Assistant
+                              </span>
+                            </div>
+                            <MarkdownView content={qa.answer} className="text-xs" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Ask Question Card */}
+                <Card className="space-y-3 border border-border-strong bg-surface-1 p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <MessageCircleQuestion className="size-4 text-accent" />
+                    <span className="text-xs font-semibold text-fg">Ask a Coding Question</span>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Textarea
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAskQuestion();
+                        }
+                      }}
+                      rows={2}
+                      placeholder="Ask about concepts, syntax, or debugging... (e.g. What is artificial intelligence?)"
+                      className="flex-1 resize-none bg-surface-0 text-xs focus:border-accent"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleAskQuestion}
+                      loading={aiLoading === 'ask'}
+                      disabled={aiLoading !== null || !question.trim()}
+                      className="h-10 px-3.5"
+                    >
+                      <SendHorizontal className="size-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-fg-subtle">Press Enter to send, Shift+Enter for new line</p>
+                </Card>
+
                 {aiError && <ErrorNote message={aiError} />}
 
+                {/* Code Analysis Result */}
                 {codeAnalysis && (
-                  <Card className="space-y-3 p-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">Code check</h4>
-                      <span className="text-xs font-mono text-fg-subtle">Readability {codeAnalysis.readabilityScore}/100</span>
+                  <Card className="space-y-3 border border-border-strong bg-surface-1 p-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-border pb-2">
+                      <div className="flex items-center gap-2">
+                        <ScanSearch className="size-4 text-accent" />
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-fg">Code Review &amp; Complexity</h4>
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-accent">
+                        Readability {codeAnalysis.readabilityScore}/100
+                      </span>
                     </div>
                     <div className="flex gap-2 text-xs">
-                      <span className="rounded border border-border-strong bg-surface-2 px-2 py-0.5 font-mono text-accent">
-                        Time {codeAnalysis.timeComplexity}
+                      <span className="rounded-md border border-border-strong bg-surface-2 px-2.5 py-1 font-mono text-accent">
+                        Time: {codeAnalysis.timeComplexity}
                       </span>
-                      <span className="rounded border border-border-strong bg-surface-2 px-2 py-0.5 font-mono text-info">
-                        Space {codeAnalysis.spaceComplexity}
+                      <span className="rounded-md border border-border-strong bg-surface-2 px-2.5 py-1 font-mono text-info">
+                        Space: {codeAnalysis.spaceComplexity}
                       </span>
                     </div>
-                    <ul className="space-y-1.5 text-xs text-fg-muted">
+                    <ul className="space-y-1.5 pt-1 text-xs text-fg-muted">
                       {codeAnalysis.styleSuggestions.map((s, i) => (
                         <li key={i} className="flex gap-2">
-                          <span className="text-fg-subtle">•</span>
-                          {s}
+                          <span className="text-accent">•</span>
+                          <span>{s}</span>
                         </li>
                       ))}
                     </ul>
                   </Card>
                 )}
 
+                {/* Socratic Hint Result */}
                 {hint && (
-                  <Card className="space-y-2 p-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">Next-step hint</h4>
+                  <div className="space-y-2 rounded-xl border border-warning/30 bg-warning/5 p-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-warning/20 pb-2">
+                      <div className="flex items-center gap-2 text-warning">
+                        <Lightbulb className="size-4" />
+                        <h4 className="text-xs font-semibold uppercase tracking-wider">Next-Step Hint</h4>
+                      </div>
                       {!hint.hasCodeSnippets && (
-                        <span className="text-[10px] text-fg-subtle">No solution code shown</span>
+                        <span className="rounded bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-fg-subtle">
+                          No solution code shown
+                        </span>
                       )}
                     </div>
-                    <p className="text-sm text-fg">{hint.hint}</p>
-                  </Card>
+                    <MarkdownView content={hint.hint} className="text-xs text-fg" />
+                  </div>
                 )}
               </div>
             )}

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Req,
@@ -44,5 +45,34 @@ export class CoursesController {
   async getCourseById(@Req() req: any, @Param('id') id: string) {
     const course = await this.coursesService.getCourseById(id, req.user.id);
     return { success: true, response: course };
+  }
+
+  @Get(':id/students')
+  @Roles(UserRole.TEACHER, UserRole.ADMIN)
+  async getStudentsForCourse(@Req() req: any, @Param('id') id: string) {
+    const students = await this.coursesService.getStudentsForCourse(id, req.user.id);
+    return { success: true, response: students };
+  }
+
+  @Patch(':id/students/:studentId/approve')
+  @Roles(UserRole.TEACHER, UserRole.ADMIN)
+  async approveStudent(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const result = await this.coursesService.approveStudentInCourse(id, studentId, req.user.id);
+    return { success: true, response: result };
+  }
+
+  @Patch(':id/students/:studentId/reject')
+  @Roles(UserRole.TEACHER, UserRole.ADMIN)
+  async rejectStudent(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const result = await this.coursesService.rejectStudentInCourse(id, studentId, req.user.id);
+    return { success: true, response: result };
   }
 }

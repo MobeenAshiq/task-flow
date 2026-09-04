@@ -11,6 +11,12 @@ export class LectureEntity extends BaseEntity {
   @Column({ type: 'text' })
   content: string;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  videoUrl?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true, default: 'emerald' })
+  colorTag?: string;
+
   // The day the lecture was/will be given — distinct from createdAt, since a
   // teacher may log a lecture after the fact or schedule one ahead.
   @Column({ type: 'timestamptz' })

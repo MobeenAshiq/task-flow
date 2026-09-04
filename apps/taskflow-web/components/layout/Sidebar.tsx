@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, LayoutDashboard, PanelLeftClose, PanelLeftOpen, SquareTerminal } from 'lucide-react';
+import { BookOpen, LayoutDashboard, PanelLeftClose, PanelLeftOpen, SquareTerminal, Video } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/courses', label: 'Courses', icon: BookOpen },
+  { href: '/courses',   label: 'Courses',   icon: BookOpen },
+  { href: '/lectures',  label: 'Lectures',  icon: Video },
 ];
 
 export function Sidebar({

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsUUID, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, IsDateString, IsOptional } from 'class-validator';
 
 export class CreateLectureDto {
   @IsNotEmpty()
@@ -14,4 +14,12 @@ export class CreateLectureDto {
 
   @IsUUID()
   courseId: string;
+
+  @IsOptional()
+  @IsString()
+  videoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  colorTag?: string;
 }

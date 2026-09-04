@@ -25,6 +25,12 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'boolean', default: true })
+  isApproved: boolean;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  phone?: string;
+
   @Column({ type: 'varchar', nullable: true })
   avatarUrl?: string;
 }

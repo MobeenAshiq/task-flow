@@ -25,7 +25,7 @@ import { AiModule } from './ai/ai.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env.local', '.env', '../../.env.local', '../../.env'],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

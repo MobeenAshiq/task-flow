@@ -3,18 +3,20 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BookOpen, ChevronDown, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { BookOpen, ChevronDown, LayoutDashboard, LogOut, Menu, Video, X } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { RoleBadge } from '@/components/layout/RoleBadge';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/courses', label: 'Courses', icon: BookOpen },
+  { href: '/courses',   label: 'Courses',   icon: BookOpen },
+  { href: '/lectures',  label: 'Lectures',  icon: Video },
 ];
 
 const SECTION_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/courses': 'Courses',
+  '/courses':   'Courses',
+  '/lectures':  'Lectures',
 };
 
 export function Navbar() {

@@ -131,6 +131,12 @@ export class AssignmentsService {
 
   async submit(assignmentId: string, dto: SubmitAssignmentDto, studentId?: string) {
     const assignment = await this.findOne(assignmentId);
+    const sid = studentId || '00000000-0000-0000-0000-000000000000';
+
+    // 1. Check deadline: If past due date, block submission completely
+    if (assignment.dueDate && new Date() > new Date(assignment.dueDate)) {
+      throw new BadRequestException('The deadline for this assignment has passed. Submissions are closed.');
+    }
 
     if (!assignment.allowedLanguages.includes(dto.language)) {
       throw new BadRequestException(
@@ -143,19 +149,35 @@ export class AssignmentsService {
       throw new BadRequestException(languageMismatch);
     }
 
-    const submission = this.submissionRepo.create({
-      studentId: studentId || '00000000-0000-0000-0000-000000000000',
-      assignmentId: assignment.id,
-      code: dto.code,
-      language: dto.language,
-      status: SubmissionStatus.PENDING,
+    // 2. Check if student already has a submission for this assignment (update existing submission before deadline)
+    let submission = await this.submissionRepo.findOne({
+      where: { assignmentId: assignment.id, studentId: sid },
+      order: { createdAt: 'DESC' },
     });
-    const savedSubmission = await this.submissionRepo.save(submission);
+
+    if (submission) {
+      submission.code = dto.code;
+      submission.language = dto.language;
+      submission.status = SubmissionStatus.PENDING;
+      submission.score = 0;
+      submission.grade = undefined;
+      submission.feedback = undefined;
+      submission = await this.submissionRepo.save(submission);
+    } else {
+      submission = this.submissionRepo.create({
+        studentId: sid,
+        assignmentId: assignment.id,
+        code: dto.code,
+        language: dto.language,
+        status: SubmissionStatus.PENDING,
+      });
+      submission = await this.submissionRepo.save(submission);
+    }
 
     await this.queueProducer.addSubmissionJob({
-      submissionId: savedSubmission.id,
+      submissionId: submission.id,
       assignmentId: assignment.id,
-      studentId: savedSubmission.studentId,
+      studentId: submission.studentId,
       code: dto.code,
       language: dto.language,
       testCases: assignment.testCases || [],
@@ -163,6 +185,6 @@ export class AssignmentsService {
       memoryLimitMb: assignment.memoryLimitMb,
     });
 
-    return savedSubmission;
+    return submission;
   }
 }

@@ -2,6 +2,7 @@
 export * from './enums/user-role.enum';
 export * from './enums/submission-status.enum';
 export * from './enums/execution-language.enum';
+export * from './enums/membership-status.enum';
 
 // Interfaces
 export * from './interfaces/test-case.interface';

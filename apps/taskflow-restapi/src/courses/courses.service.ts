@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import {
   CourseEntity,
   CourseMembershipEntity,
+  MembershipStatus,
   UserEntity,
   UserRole,
 } from '@taskflow/shared';
@@ -74,6 +75,7 @@ export class CoursesService {
     const membership = this.membershipRepo.create({
       courseId: course.id,
       studentId,
+      status: MembershipStatus.PENDING,
     });
 
     return await this.membershipRepo.save(membership);
@@ -104,6 +106,7 @@ export class CoursesService {
         ...m.course,
         teacherName: m.course?.teacher?.name || m.course?.teacher?.email,
         assignmentCount: m.course?.assignments?.length || 0,
+        membershipStatus: m.status,
       }));
     }
   }
@@ -136,9 +139,82 @@ export class CoursesService {
         id: m.student.id,
         name: m.student.name,
         email: m.student.email,
+        phone: m.student.phone,
+        isApproved: m.student.isApproved,
+        membershipStatus: m.status || MembershipStatus.APPROVED,
         joinedAt: m.createdAt,
       })),
     };
+  }
+
+  async getStudentsForCourse(courseId: string, teacherId: string) {
+    const course = await this.courseRepo.findOne({ where: { id: courseId } });
+    if (!course || course.teacherId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can access student approvals.');
+    }
+
+    const memberships = await this.membershipRepo.find({
+      where: { courseId },
+      relations: { student: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    return memberships.map((m) => ({
+      membershipId: m.id,
+      studentId: m.student.id,
+      name: m.student.name,
+      email: m.student.email,
+      phone: m.student.phone || 'Not provided',
+      avatarUrl: m.student.avatarUrl,
+      status: m.status || MembershipStatus.PENDING,
+      isApproved: m.student.isApproved,
+      joinedAt: m.createdAt,
+    }));
+  }
+
+  async approveStudentInCourse(courseId: string, studentId: string, teacherId: string) {
+    const course = await this.courseRepo.findOne({ where: { id: courseId } });
+    if (!course || course.teacherId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can approve students.');
+    }
+
+    const membership = await this.membershipRepo.findOne({
+      where: { courseId, studentId },
+    });
+    if (!membership) {
+      throw new NotFoundException('Student membership not found');
+    }
+
+    membership.status = MembershipStatus.APPROVED;
+    await this.membershipRepo.save(membership);
+
+    // Also set user isApproved flag
+    const student = await this.userRepo.findOne({ where: { id: studentId } });
+    if (student) {
+      student.isApproved = true;
+      await this.userRepo.save(student);
+    }
+
+    return { success: true, message: 'Student approved successfully' };
+  }
+
+  async rejectStudentInCourse(courseId: string, studentId: string, teacherId: string) {
+    const course = await this.courseRepo.findOne({ where: { id: courseId } });
+    if (!course || course.teacherId !== teacherId) {
+      throw new ForbiddenException('Only the course teacher can reject students.');
+    }
+
+    const membership = await this.membershipRepo.findOne({
+      where: { courseId, studentId },
+    });
+    if (!membership) {
+      throw new NotFoundException('Student membership not found');
+    }
+
+    membership.status = MembershipStatus.REJECTED;
+    await this.membershipRepo.save(membership);
+
+    return { success: true, message: 'Student rejected successfully' };
   }
 
   private generateJoinCode(): string {

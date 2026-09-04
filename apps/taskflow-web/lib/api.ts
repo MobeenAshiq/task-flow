@@ -101,6 +101,11 @@ export const aiApi = {
       method: 'POST',
       body: JSON.stringify({ assignmentPrompt, studentCode, errorOutput }),
     }),
+  ask: (question: string, context?: string) =>
+    fetcher<{ answer: string }>('ai/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question, context }),
+    }),
 };
 
 export const lecturesApi = {

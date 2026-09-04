@@ -10,6 +10,7 @@ import { SocraticHintDto } from './dto/socratic-hint.dto';
 import { ExplainErrorDto } from './dto/explain-error.dto';
 import { AnalyzeCodeDto } from './dto/analyze-code.dto';
 import { ClassInsightsDto } from './dto/class-insights.dto';
+import { AskQuestionDto } from './dto/ask-question.dto';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -60,5 +61,12 @@ export class AiController {
   async analyzeCode(@Body() dto: AnalyzeCodeDto) {
     const analysis = await this.aiService.analyzeComplexityAndStyle(dto);
     return { success: true, response: analysis };
+  }
+
+  @Post('ask')
+  @Roles(UserRole.STUDENT, UserRole.TEACHER, UserRole.ADMIN)
+  async askQuestion(@Body() dto: AskQuestionDto) {
+    const result = await this.aiService.askCodingQuestion(dto);
+    return { success: true, response: result };
   }
 }
