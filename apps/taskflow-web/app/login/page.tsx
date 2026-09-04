@@ -23,7 +23,6 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState('');
   const [pin, setPin] = useState('');
   const [pinSent, setPinSent] = useState(false);
-  const [devPin, setDevPin] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
@@ -52,12 +51,8 @@ export default function LoginPage() {
     setError(null);
     setInfoMsg(null);
     try {
-      const res = await authApi.sendPin(email.trim());
+      await authApi.sendPin(email.trim());
       setPinSent(true);
-      if (res.devPin) {
-        setDevPin(res.devPin);
-        setPin(res.devPin);
-      }
       setInfoMsg(`Verification PIN sent to ${email.trim()}. Enter code below.`);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : 'Failed to send verification PIN.');
@@ -192,12 +187,6 @@ export default function LoginPage() {
                     {infoMsg}
                   </div>
                 )}
-                {devPin && (
-                  <div className="flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs font-mono text-success">
-                    <span>Generated PIN Code:</span>
-                    <span className="font-bold text-sm tracking-wider">{devPin}</span>
-                  </div>
-                )}
                 {successMsg && (
                   <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/10 p-3 text-xs text-success">
                     <CheckCircle2 className="size-4" />
@@ -266,12 +255,6 @@ export default function LoginPage() {
                 {infoMsg && (
                   <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-xs text-accent">
                     {infoMsg}
-                  </div>
-                )}
-                {devPin && (
-                  <div className="flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs font-mono text-success">
-                    <span>Generated PIN Code:</span>
-                    <span className="font-bold text-sm tracking-wider">{devPin}</span>
                   </div>
                 )}
                 <div>

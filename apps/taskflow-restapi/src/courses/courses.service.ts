@@ -48,6 +48,10 @@ export class CoursesService {
     const course = this.courseRepo.create({
       title: dto.title,
       description: dto.description,
+      category: dto.category || 'Development',
+      coverImage: dto.coverImage || '/course_webdev.jpg',
+      level: dto.level || 'Beginner',
+      rating: 4.9,
       joinCode,
       teacherId,
     });
@@ -224,5 +228,29 @@ export class CoursesService {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+  }
+
+  async getPublicCatalog(): Promise<any[]> {
+    const courses = await this.courseRepo.find({
+      relations: { teacher: true, memberships: true, assignments: true },
+      order: { createdAt: 'DESC' },
+      take: 12,
+    });
+
+    return courses.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      joinCode: c.joinCode,
+      teacherId: c.teacherId,
+      createdAt: c.createdAt,
+      studentCount: c.memberships?.length || 0,
+      assignmentCount: c.assignments?.length || 0,
+      teacherName: c.teacher?.name || c.teacher?.email || 'Faculty Instructor',
+      category: c.category || 'Development',
+      coverImage: c.coverImage || '/course_webdev.jpg',
+      level: c.level || 'Beginner',
+      rating: c.rating || 4.9,
+    }));
   }
 }

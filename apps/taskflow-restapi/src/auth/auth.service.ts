@@ -106,15 +106,12 @@ export class AuthService {
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
 
     this.pinStore.set(email, { pin, expiresAt });
-    this.logger.log(`🔑 Gmail Verification PIN generated for ${email}: ${pin}`);
-    console.log(`\n==================================================`);
-    console.log(`📧 GMAIL VERIFICATION PIN SENT TO ${email}: ${pin}`);
-    console.log(`==================================================\n`);
+    // TODO: send `pin` via email once a mail provider is configured. Never return it to the client.
+    this.logger.log(`Verification PIN generated for ${email}`);
 
     return {
       message: `Verification PIN has been sent to ${email}`,
       email,
-      devPin: pin,
     };
   }
 

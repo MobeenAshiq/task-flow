@@ -28,7 +28,7 @@ export const authApi = {
       body: JSON.stringify({ email, password, name, role }),
     }),
   sendPin: (email: string) =>
-    fetcher<{ message: string; email: string; devPin?: string }>('auth/send-pin', {
+    fetcher<{ message: string; email: string }>('auth/send-pin', {
       method: 'POST',
       body: JSON.stringify({ email }),
     }),
@@ -57,6 +57,7 @@ export const authApi = {
 
 export const coursesApi = {
   list: () => fetcher<Course[]>('courses'),
+  listPublic: () => fetcher<Course[]>('courses/public/catalog'),
   get: (id: string) => fetcher<CourseDetail>(`courses/${id}`),
   create: (title: string, description: string) =>
     fetcher<Course>('courses', {

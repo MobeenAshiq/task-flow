@@ -19,6 +19,18 @@ export class CourseEntity extends BaseEntity {
   @Column({ type: 'uuid' })
   teacherId: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true, default: 'Development' })
+  category: string;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  coverImage: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true, default: 'Beginner' })
+  level: string;
+
+  @Column({ type: 'float', default: 4.9 })
+  rating: number;
+
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'teacherId' })
   teacher: UserEntity;

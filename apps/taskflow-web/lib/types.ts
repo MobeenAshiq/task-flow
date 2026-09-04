@@ -43,6 +43,10 @@ export interface Course {
   studentCount?: number;
   assignmentCount?: number;
   teacherName?: string;
+  category?: string;
+  coverImage?: string;
+  level?: string;
+  rating?: number;
 }
 
 export interface Lecture {

@@ -8,4 +8,16 @@ export class CreateCourseDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsString()
+  @IsOptional()
+  coverImage?: string;
+
+  @IsString()
+  @IsOptional()
+  level?: string;
 }

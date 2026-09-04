@@ -12,6 +12,7 @@ import { UserRole } from '@taskflow/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { JoinCourseDto } from './dto/join-course.dto';
@@ -20,6 +21,13 @@ import { JoinCourseDto } from './dto/join-course.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
+
+  @Public()
+  @Get('public/catalog')
+  async getPublicCatalog() {
+    const catalog = await this.coursesService.getPublicCatalog();
+    return { success: true, response: catalog };
+  }
 
   @Post()
   @Roles(UserRole.TEACHER, UserRole.ADMIN)
