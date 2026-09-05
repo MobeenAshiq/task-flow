@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserEntity, UserRole } from '@taskflow/shared';
 import { RedisService } from '../redis/redis.service';
+import { MailService } from '../mail/mail.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { SendPinDto } from './dto/send-pin.dto';
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly userRepo: Repository<UserEntity>,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
+    private readonly mailService: MailService,
   ) {}
 
   private pinKey(email: string) {
@@ -115,8 +117,8 @@ export class AuthService {
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     await this.redisService.getClient().set(this.pinKey(email), pin, 'EX', PIN_TTL_SECONDS);
-    // TODO: send `pin` via email once a mail provider is configured. Never return it to the client.
-    this.logger.log(`Verification PIN generated for ${email}`);
+    await this.mailService.sendVerificationPin(email, pin);
+    this.logger.log(`Verification PIN sent to ${email}`);
 
     return {
       message: `Verification PIN has been sent to ${email}`,
