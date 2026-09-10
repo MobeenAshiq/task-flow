@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Patch, Body, Req, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -14,6 +15,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
     return { success: true, response: result };
@@ -26,18 +29,24 @@ export class AuthController {
   }
 
   @Post('send-pin')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async sendPin(@Body() sendPinDto: SendPinDto) {
     const result = await this.authService.sendPin(sendPinDto);
     return { success: true, response: result };
   }
 
   @Post('verify-pin')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyPin(@Body() verifyPinDto: VerifyPinDto) {
     const result = await this.authService.verifyPin(verifyPinDto);
     return { success: true, response: result };
   }
 
   @Post('reset-password')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.authService.resetPassword(dto);
     return { success: true, response: result };
