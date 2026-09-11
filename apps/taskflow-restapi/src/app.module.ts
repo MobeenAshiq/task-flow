@@ -37,6 +37,7 @@ import { AiModule } from './ai/ai.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'taskflow'),
+        ssl: configService.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
         entities: [
           UserEntity,
           CourseEntity,
