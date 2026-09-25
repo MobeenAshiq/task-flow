@@ -16,3 +16,5 @@ export * from './entities/course-membership.entity';
 export * from './entities/assignment.entity';
 export * from './entities/submission.entity';
 export * from './entities/lecture.entity';
+export * from './entities/cms-content.entity';
+

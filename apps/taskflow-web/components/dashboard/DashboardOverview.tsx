@@ -217,7 +217,7 @@ export function DashboardOverview() {
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-fg tracking-tight">Overview</h2>
-        <p className="text-xs text-fg-muted mt-0.5">Welcome back. Here's today's productivity overview.</p>
+        <p className="text-xs text-fg-muted mt-0.5">Welcome back. Here&apos;s today&apos;s productivity overview.</p>
       </div>
 
       {/* Stat Cards */}
@@ -292,7 +292,7 @@ export function DashboardOverview() {
           {/* Today's Tasks */}
           <section className="rounded-xl border border-border bg-surface-1/80 backdrop-blur-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-fg">Today's Tasks</h3>
+              <h3 className="text-sm font-semibold text-fg">Today&apos;s Tasks</h3>
               <button id="btn-view-tasks" className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors">
                 View All <ExternalLink className="size-3" />
               </button>

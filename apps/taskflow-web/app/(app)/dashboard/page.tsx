@@ -192,6 +192,7 @@ export default function DashboardPage() {
   const [courses,     setCourses]     = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<EnrichedAssignment[]>([]);
   const [submissions, setSubmissions] = useState<EnrichedSubmission[]>([]);
+  const [now] = useState(() => Date.now());
   const [lectures,    setLectures]    = useState<Lecture[]>([]);
 
   useEffect(() => {
@@ -306,13 +307,12 @@ export default function DashboardPage() {
   // 7-day submission trend
   const submissionTrend = useMemo(() => {
     const counts = Array(7).fill(0);
-    const now = Date.now();
     for (const s of submissions) {
       const diff = Math.floor((now - new Date(s.submittedAt).getTime()) / 86_400_000);
       if (diff >= 0 && diff < 7) counts[6 - diff]++;
     }
     return counts;
-  }, [submissions]);
+  }, [submissions, now]);
 
   // Due dates for calendar
   const dueDates = assignments.map((a) => a.dueDate).filter(Boolean) as string[];

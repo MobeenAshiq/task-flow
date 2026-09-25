@@ -8,6 +8,7 @@ import {
   AssignmentEntity,
   SubmissionEntity,
   LectureEntity,
+  CmsContentEntity,
 } from '@taskflow/shared';
 import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
@@ -20,6 +21,7 @@ import { HealthModule } from './health/health.module';
 import { AppLoggerModule } from './common/logger/logger.module';
 import { RunnerModule } from './runner/runner.module';
 import { AiModule } from './ai/ai.module';
+import { CmsModule } from './cms/cms.module';
 
 @Module({
   imports: [
@@ -45,6 +47,7 @@ import { AiModule } from './ai/ai.module';
           AssignmentEntity,
           SubmissionEntity,
           LectureEntity,
+          CmsContentEntity,
         ],
         synchronize: true,
       }),
@@ -60,6 +63,8 @@ import { AiModule } from './ai/ai.module';
     CoursesModule,
     AssignmentsModule,
     LecturesModule,
+    CmsModule,
   ],
 })
+
 export class AppModule {}

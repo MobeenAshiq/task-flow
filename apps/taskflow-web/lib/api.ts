@@ -2,6 +2,7 @@ import { fetcher } from '@/lib/fetch';
 import type {
   Assignment,
   AuthUser,
+  CmsContent,
   Course,
   CourseDetail,
   CourseStudent,
@@ -10,6 +11,39 @@ import type {
   SubmissionRow,
   UserRole,
 } from '@/lib/types';
+
+export interface CodeAnalysis {
+  analysis: string;
+}
+
+export interface SocraticHint {
+  hint: string;
+}
+
+export const cmsApi = {
+  listPublic: (type?: string) => fetcher<CmsContent[]>(`cms${type ? `?type=${type}` : ''}`),
+  listAdmin: (type?: string) => fetcher<CmsContent[]>(`cms/admin${type ? `?type=${type}` : ''}`),
+  get: (idOrKey: string) => fetcher<CmsContent>(`cms/${idOrKey}`),
+  create: (payload: Partial<CmsContent>) =>
+    fetcher<CmsContent>('cms', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  update: (id: string, payload: Partial<CmsContent>) =>
+    fetcher<CmsContent>(`cms/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  delete: (id: string) =>
+    fetcher<{ success: boolean }>(`cms/${id}`, {
+      method: 'DELETE',
+    }),
+  seed: () =>
+    fetcher<{ count: number; items: CmsContent[] }>('cms/seed', {
+      method: 'POST',
+    }),
+};
+
 
 interface AuthResponse {
   accessToken: string;

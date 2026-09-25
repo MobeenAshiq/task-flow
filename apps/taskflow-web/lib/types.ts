@@ -127,3 +127,20 @@ export interface SubmissionRow {
   submittedAt: string;
   isLate: boolean;
 }
+
+export interface CmsContent {
+  id: string;
+  key: string;
+  type: 'announcement' | 'topic' | 'faq' | 'feature' | 'banner' | 'news' | string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  linkUrl?: string;
+  icon?: string;
+  metadata?: Record<string, unknown>;
+  isPublished: boolean;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

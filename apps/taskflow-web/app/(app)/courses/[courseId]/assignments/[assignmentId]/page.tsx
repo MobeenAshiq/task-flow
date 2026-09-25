@@ -718,7 +718,7 @@ export default function StudentWorkspacePage() {
                     <Spinner label="Running code in execution sandbox…" />
                   </div>
                 ) : !runResult ? (
-                  <span className="text-slate-500">Click "Run Code" to execute your solution.</span>
+                  <span className="text-slate-500">Click &quot;Run Code&quot; to execute your solution.</span>
                 ) : terminalTab === 'console' ? (
                   <div className="space-y-3">
                     {runResult.stdout && (

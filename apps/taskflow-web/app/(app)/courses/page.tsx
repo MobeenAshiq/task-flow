@@ -63,20 +63,24 @@ export default function CoursesPage() {
   const [certModalOpen, setCertModalOpen] = useState(false);
   const [certCourse, setCertCourse] = useState<Course | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setCourses(await coursesApi.list());
-    } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : 'Failed to load courses.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const courseList = await coursesApi.list();
+        if (!cancelled) setCourses(courseList);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof ApiRequestError ? err.message : 'Failed to load courses.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
     load();
+    return () => { cancelled = true; };
   }, []);
 
   const toggleWishlist = (id: string, e: React.MouseEvent) => {

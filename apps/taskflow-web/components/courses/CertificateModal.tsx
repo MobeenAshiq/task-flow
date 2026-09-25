@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Award, CheckCircle2, Download, Printer, ShieldCheck, Sparkles } from 'lucide-react';
+import { Award, CheckCircle2, Printer, ShieldCheck } from 'lucide-react';
 import { formatDateOnly } from '@/lib/status';
 
 export function CertificateModal({
@@ -20,7 +21,7 @@ export function CertificateModal({
   teacherName?: string;
   completionDate?: string;
 }) {
-  const certId = `TF-CERT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+  const [certId] = useState(() => `TF-CERT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`);
   const dateStr = formatDateOnly(completionDate || new Date().toISOString());
 
   const handlePrint = () => {

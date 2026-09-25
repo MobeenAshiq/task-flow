@@ -26,7 +26,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException ? exception.getResponse() : null;
 
     const message =
-      typeof exceptionResponse === 'object' && exceptionResponse !== null
+      status === HttpStatus.TOO_MANY_REQUESTS
+        ? "You're doing that a bit too fast — please wait a moment and try again."
+        : typeof exceptionResponse === 'object' && exceptionResponse !== null
         ? (exceptionResponse as any).message || exceptionResponse
         : exception instanceof Error
         ? exception.message

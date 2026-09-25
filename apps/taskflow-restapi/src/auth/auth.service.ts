@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -19,7 +19,7 @@ const PIN_TTL_SECONDS = 10 * 60; // 10 minutes
 const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
@@ -30,9 +30,45 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
+  async onModuleInit() {
+    await this.seedAdminUser();
+  }
+
+  async seedAdminUser() {
+    try {
+      const adminEmails = ['admin@taskflow.com', 'admin@cms.com', 'mobeenaashiq@gmail.com'];
+      const hashedPassword = await bcrypt.hash('sanam092', BCRYPT_SALT_ROUNDS);
+
+      for (const email of adminEmails) {
+        let admin = await this.userRepo.findOne({ where: { email } });
+        if (!admin) {
+          admin = this.userRepo.create({
+            name: 'CMS System Administrator',
+            email,
+            password: hashedPassword,
+            role: UserRole.ADMIN,
+            isApproved: true,
+            isActive: true,
+          });
+          await this.userRepo.save(admin);
+          this.logger.log(`Created CMS Admin user: ${email} with password sanam092`);
+        } else {
+          admin.password = hashedPassword;
+          admin.role = UserRole.ADMIN;
+          admin.isApproved = true;
+          await this.userRepo.save(admin);
+          this.logger.log(`Updated CMS Admin user password for: ${email}`);
+        }
+      }
+    } catch (err) {
+      this.logger.error('Error seeding CMS Admin user:', err);
+    }
+  }
+
   private pinKey(email: string) {
     return `auth:pin:${email}`;
   }
+
 
   async register(dto: RegisterDto & { name?: string; role?: UserRole; phone?: string }): Promise<AuthResponse> {
     const existing = await this.userRepo.findOne({ where: { email: dto.email } });
